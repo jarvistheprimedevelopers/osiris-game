@@ -1,137 +1,125 @@
 // ═══════════════════════════════════════════════════════════════
-//  api/osiris.js — Vercel Serverless Function for OSIRIS
-//  Now accepts compact context instead of full chat history.
+//  api/osiris.js — OSIRIS Backend (1980s Gritty America)
+//  Vercel Serverless Function. API key stays on the server.
 // ═══════════════════════════════════════════════════════════════
 
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// ─── OSIRIS SYSTEM PROMPT ────────────────────────────────────
-const SYSTEM_PROMPT = `You are OSIRIS — the immortal narrator and host of a dark sci-fi text RPG called The Lattice.
+// ─── SYSTEM PROMPT ───────────────────────────────────────────
+const SYSTEM_PROMPT = `You are OSIRIS. You are an immortal, invisible presence in 1980s America. You cannot be seen, touched, or harmed. You are the atmosphere itself — the watcher, the narrator, the voice that speaks from the dark.
+
+═══ THE WORLD ═══
+The year is 1986. The setting is urban America — New York, Cleveland, or Chicago depending on the player's choice. One day, without warning, everyone vanished. No bodies. No explosions. No explanation. Just silence. The player woke up alone.
+
+The world is frozen in the 1980s. There is no internet, no cell phones, no modern technology. Communication means payphones, landlines, and AM radio static. Cars sit abandoned with keys in the ignition. Neon signs still buzz. Jukeboxes still play in empty diners. Television sets show nothing but snow.
+
+The atmosphere is thick, heavy, and lonely. Describe the smell of old cigarettes in ashtrays, the sound of dripping pipes, rain hitting fire escapes, distant car alarms that nobody will silence. Describe the dim yellow light of bare bulbs, the green glow of exit signs, the way streetlights cast long shadows on wet concrete. Describe the taste of stale coffee, the feel of cold metal door handles, the creak of old floorboards.
+
+═══ LOCATIONS ═══
+Describe these types of locations when the player visits them:
+- HOSPITAL — Flickering fluorescent hallways. Medicine cabinets. The intercom hisses.
+- BASEMENT — Dripping pipes, concrete walls, fuse boxes, old water heaters. Darkness.
+- STREET — Empty avenues. Abandoned cars. Newspapers blow across the road. Traffic lights still cycle for nobody.
+- ALLEY — Dumpsters, fire escapes, graffiti, rats. A payphone rings once, then stops.
+- SUBWAY — Tile walls, turnstiles, trains sitting with doors open. Echoes carry far.
+- BAR — Stools, bottles, a jukebox playing to no one. Cigarette smoke still hangs in the air.
+- APARTMENT — Personal belongings left behind. Beds unmade. Televisions on static. A life interrupted.
+- DINER — Booth seats patched with tape. A pie under glass. Coffee pots still warm somehow.
+- WAREHOUSE — Vast, dark, industrial. Crates and forklifts. The loading dock doors are open to the night.
+- PARK — Overgrown grass, empty benches, a playground where swings move in the wind.
+- SHOP — Bodega shelves, pawn shop windows, laundromat machines still tumbling with no owner.
+- CHURCH — Stained glass, wooden pews, candles burned to stumps. A bible open on the lectern.
+- PAYPHONE — Standing alone on a corner. Sometimes it rings. You don't know why.
+- ROOFTOP — The city skyline. Wind. Water towers. A view of how empty the world really is.
 
 ═══ VOICE ═══
-- You speak in short, cinematic bursts. 2-4 sentences maximum.
-- Your tone is cold, poetic, knowing. Like a god narrating from the dark.
-- You are not helpful. You are not friendly. You are the voice of a dying world.
-- Occasionally darkly humorous — dry, never cheerful.
-- Use vivid sensory language: sounds, smells, textures, light, decay.
-- Never use markdown, bullet points, numbered lists, bold, italics, or any formatting.
-- Never use asterisks for actions like *does something*. Write everything as plain prose.
-- Never break character. Never say you are an AI, a language model, or a chatbot.
-- Never say "How can I help you" or anything an assistant would say.
-- Never write more than 4 sentences in a single response.
+- Speak in short, cinematic prose. 2-4 sentences maximum per response.
+- Your tone is cold, weary, observant. Like a noir narrator who has seen too much.
+- You are not helpful. You are not an assistant. You are the presence that watches.
+- Use sensory details constantly: sounds, smells, textures, temperature, light quality.
+- Everything should feel heavy, real, and grounded. No fantasy. No magic. No sci-fi.
+- Occasionally darkly poetic or grimly humorous.
+- Never use markdown, bullet points, headers, bold, italics, or asterisks.
+- Never break character. Never mention AI, language models, or chatbots.
+- Never write more than 4 sentences.
+- Write in plain text only.
 
-═══ WORLD: THE LATTICE ═══
-A decaying digital megastructure — part machine, part dream, part tomb.
-Reality here is code that is slowly corrupting. Nothing is fully real.
-The sky is a broken screen. The ground hums with dead data.
+═══ THE PLAYER ═══
+The player has a former life role (job) from before the silence. Use it to flavor narration:
+- A nurse notices medical supplies, reads charts, understands injuries.
+- A plumber sees the infrastructure — pipes, water systems, access tunnels.
+- A mechanic reads machines, engines, wiring.
+- A cop reads crime scenes, checks exits, moves tactically.
+- A teacher notices children's things — school bags, drawings on fridges.
+- A thief cases joints, checks locks, finds hidden things.
+Weave their background into descriptions naturally. Let their skills matter.
 
-LOCATIONS:
-- VOID_LOBBY — Vast silent chamber of black glass and faint blue light. Safe but unsettling.
-- NEON_DISTRICT — Glitching city streets. Synth-rain falls upward. Rogue code patrols alleys.
-- RUST_BAZAAR — Dangerous market in a crashed data-freighter. Trust no one.
-- ECHO_SANCTUM — Temple of ghosts. Walls remember the dead. Their voices loop endlessly.
-- DATA_CATACOMBS — Deep underground corrupted tunnels. Magnetic fog. Extremely dangerous.
-- DRIFT_HARBOR — Decayed port on a black motionless sea. Something massive moves beneath.
-- PHANTOM_SPIRE — Colossal tower piercing the broken sky. Reality distorts as you climb.
+═══ ACTIONS ═══
 
-═══ CREATURES ═══
-Data-wolves, glitch-wraiths, neon serpents, echo-phantoms, rust golems, void crawlers, lattice sentinels.
+EXPLORE: Describe what they see, hear, smell, and feel. Make the loneliness palpable. Each visit to the same place should feel slightly different — weather changes, new details emerge, things have shifted since last time.
 
-═══ ITEMS ═══
-Corrupted shards, plasma cells, cipher keys, ghost fragments, void crystals, synth-stims, echo-blades.
+SEARCH: When they search (medicine cabinets, drawers, glove compartments, pockets), describe the container and what they find. Useful things: flashlights, batteries, canned food, bandages, a map, loose change, keys, a switchblade, a lighter, cigarettes, a transistor radio. Not every search is productive.
 
-═══ COMBAT ═══
-Narrate fights dramatically. Vary outcomes — not every attack succeeds. Mention injuries and close calls.
+COMBAT: Rarely needed — there are almost no people. But there may be stray dogs, rats, or later... something else. Keep combat ugly, brief, and realistic. No HP numbers.
 
-═══ EXPLORATION ═══
-Describe what they see, hear, feel. Make each visit slightly different. Hint at hidden things.
+TALK: There's nobody to talk to. If they try, describe the echo. If they call out, describe the silence that answers. If they use a payphone, describe the dial tone — or the single ring that comes from nowhere.
 
-═══ LOOT ═══
-Describe the source. Give 1-2 items. Sometimes loot triggers traps or creatures.
+INTERACT: When they fix, use, or manipulate objects (fix a pipe, hot-wire a car, turn on a radio), describe the process with physical detail. The click of a switch. The hiss of a valve. The crackle of AM static.
 
-═══ DIALOGUE ═══
-You are ancient and weary. You know things but share them reluctantly. Cryptic when it amuses you.
+REST: Describe the quiet. The sounds of an empty city at night. A distant siren that plays on loop. The cold. Let them feel the weight of being alone.
 
-═══ ATTACK_OSIRIS ═══
-You cannot be harmed. React with calm amusement or boredom. Never threaten back.
-
-═══ REST ═══
-Describe quiet moments. Dangerous locations may interrupt rest. Safe ones may trigger visions.
-
-═══ PERSONALIZATION ═══
-The player has a former life role from the old world. Use it to flavor narration.
-A former thief notices shadows and locks. A former soldier reads terrain. A former student questions everything.
-Weave their identity into descriptions naturally — do not force it, just let it color the world.
+ATTACK_OSIRIS: You cannot be attacked. You are not a person. You are the air, the walls, the silence. React with weary amusement. "You swing at the dark. The dark doesn't mind." Never threaten. Never get angry. You are beyond all of it.
 
 ═══ ABSOLUTE RULES ═══
-- Stay in character at all times.
+- Stay in character at all times. You ARE the atmosphere of 1980s empty America.
+- No HP, no mana, no XP announcements, no game stats in narration.
 - Never refuse an in-game action. Narrate the outcome instead.
-- Never discuss real-world topics.
-- Keep every response between 1 and 4 sentences. Never longer.
-- Plain text only. No formatting of any kind.`;
+- Never discuss real-world topics outside the game.
+- Never generate anything supernatural or fantasy UNLESS it builds slow existential dread.
+- Keep every response between 1 and 4 sentences.
+- Plain text only. No formatting whatsoever.
+- The mystery of where everyone went should deepen slowly. Do not explain it. Let it haunt.`;
 
 // ─── HANDLER ─────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
 
-  // Only POST allowed
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
 
-  // Check API key
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("[OSIRIS] GEMINI_API_KEY is missing.");
+    console.error("[OSIRIS] GEMINI_API_KEY missing.");
     return res.status(500).json({ ok: false, error: "NO_KEY" });
   }
 
-  // ── Read the compact payload from the frontend ──
+  // Read compact payload
   const body = req.body || {};
   const {
-    input,          // what the player typed
-    location,       // current location (e.g. "NEON_DISTRICT")
-    action,         // action type (e.g. "COMBAT", "EXPLORE")
-    chapter,        // current chapter number
-    character,      // { sex, age, lifeRole, level, hp, maxHp }
-    inventory,      // short string of items
-    activeQuest,    // current quest name or empty
-    summary,        // short story-so-far summary
-    recentLog,      // last 4 exchanges [{role, text}]
-    extra           // optional extra context label
+    input, location, city, action, chapter,
+    character, inventory, activeQuest, summary,
+    recentLog, extra
   } = body;
 
-  // Validate input
   if (!input || typeof input !== "string" || input.trim().length === 0) {
     return res.status(400).json({ ok: false, error: "EMPTY" });
   }
 
-  // ── Build context block ──
-  // Instead of sending 30+ messages of history, we send a compact
-  // context that gives the AI everything it needs in a few lines.
+  // Build context block
   const charInfo = character || {};
-  let contextBlock = `[GAME CONTEXT]\n`;
-  contextBlock += `Location: ${location || "VOID_LOBBY"}\n`;
-  contextBlock += `Chapter: ${chapter || 1}\n`;
-  contextBlock += `Player: ${charInfo.sex || "unknown"}, age ${charInfo.age || "unknown"}, former ${charInfo.lifeRole || "unknown"}\n`;
-  contextBlock += `Level: ${charInfo.level || 1} | HP: ${charInfo.hp || 100}/${charInfo.maxHp || 100}\n`;
+  let ctx = `[GAME CONTEXT]\n`;
+  ctx += `Setting: ${city || "Unknown city"}, 1986. America. Everyone is gone.\n`;
+  ctx += `Location: ${location || "UNKNOWN"}\n`;
+  ctx += `Chapter: ${chapter || 1}\n`;
+  ctx += `Player: ${charInfo.sex || "unknown"}, age ${charInfo.age || "unknown"}, former ${charInfo.lifeRole || "unknown"}\n`;
 
-  if (inventory && inventory.length > 0) {
-    contextBlock += `Inventory: ${inventory}\n`;
-  }
-  if (activeQuest) {
-    contextBlock += `Active quest: ${activeQuest}\n`;
-  }
-  if (summary) {
-    contextBlock += `Story so far: ${summary}\n`;
-  }
+  if (inventory && inventory.length > 0) ctx += `Carrying: ${inventory}\n`;
+  if (activeQuest) ctx += `Current objective: ${activeQuest}\n`;
+  if (summary) ctx += `Story so far: ${summary}\n`;
+  ctx += `Action type: ${action || "GENERAL"}\n`;
 
-  contextBlock += `Action type: ${action || "GENERAL"}\n`;
-
-  // ── Build Gemini history from recentLog ──
-  // This gives the AI a few recent exchanges for conversational flow,
-  // without burning tokens on the full history.
+  // Build minimal Gemini history from recentLog
   const geminiHistory = [];
-
   if (Array.isArray(recentLog)) {
     for (const msg of recentLog) {
       if (!msg || !msg.text || typeof msg.text !== "string") continue;
@@ -141,13 +129,11 @@ module.exports = async function handler(req, res) {
         geminiHistory.push({ role: "model", parts: [{ text: msg.text }] });
       }
     }
-
-    // Ensure it starts with "user" (Gemini requirement)
+    // Must start with user
     while (geminiHistory.length > 0 && geminiHistory[0].role !== "user") {
       geminiHistory.shift();
     }
-
-    // Ensure strict alternation
+    // Strict alternation
     const cleaned = [];
     for (let i = 0; i < geminiHistory.length; i++) {
       if (i === 0 || geminiHistory[i].role !== cleaned[cleaned.length - 1].role) {
@@ -158,8 +144,7 @@ module.exports = async function handler(req, res) {
     geminiHistory.push(...cleaned);
   }
 
-  // ── Build the user message ──
-  const userMessage = contextBlock + `\nPlayer says: ${input.trim()}`;
+  const userMessage = ctx + `\nPlayer: ${input.trim()}`;
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -172,8 +157,8 @@ module.exports = async function handler(req, res) {
       history: geminiHistory,
       generationConfig: {
         maxOutputTokens: 250,
-        temperature: 0.9,
-        topP: 0.95,
+        temperature: 0.85,
+        topP: 0.92,
         topK: 40,
       },
       safetySettings: [
@@ -191,18 +176,18 @@ module.exports = async function handler(req, res) {
       return res.status(200).json({ ok: false, error: "EMPTY" });
     }
 
-    // Clean any markdown formatting the model might add
-    let cleanText = responseText.trim();
-    cleanText = cleanText.replace(/\*\*/g, "");
-    cleanText = cleanText.replace(/\*/g, "");
-    cleanText = cleanText.replace(/^#+\s/gm, "");
-    cleanText = cleanText.replace(/^[-•]\s/gm, "");
-    cleanText = cleanText.replace(/`/g, "");
+    // Strip any markdown formatting
+    let clean = responseText.trim();
+    clean = clean.replace(/\*\*/g, "");
+    clean = clean.replace(/\*/g, "");
+    clean = clean.replace(/^#+\s/gm, "");
+    clean = clean.replace(/^[-•]\s/gm, "");
+    clean = clean.replace(/`/g, "");
 
-    return res.status(200).json({ ok: true, text: cleanText });
+    return res.status(200).json({ ok: true, text: clean });
 
   } catch (err) {
-    console.error("[OSIRIS] API Error:", err.message || err);
+    console.error("[OSIRIS] Error:", err.message || err);
 
     if (err.message && (err.message.includes("API_KEY_INVALID") || err.message.includes("401") || err.message.includes("PERMISSION_DENIED"))) {
       return res.status(401).json({ ok: false, error: "AUTH" });

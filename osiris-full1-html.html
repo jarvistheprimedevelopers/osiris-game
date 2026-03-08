@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OSIRIS | Terminal</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+  *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+  body{
+    background:#050505;color:#fff;
+    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  /* ═══ GHOST ORB ═══ */
+  #ghost{
+    position:fixed;top:14%;right:9%;width:100px;height:100px;
+    border-radius:50%;display:flex;justify-content:center;align-items:center;
+    z-index:100;cursor:default;
+    background:linear-gradient(45deg,#00f2ff,#ff00ff);
+    box-shadow:0 0 40px rgba(0,242,255,.4),0 0 80px rgba(255,0,255,.15);
+    animation:orbFloat 4s ease-in-out infinite;
+    transition:top .5s cubic-bezier(.175,.885,.32,1.275);
+    display:none; /* hidden until game starts */
+  }
+  .eye{width:10px;height:10px;background:#fff;border-radius:50%;margin:5px;box-shadow:0 0 10px #fff}
+  @keyframes orbFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-30px) rotate(5deg)}}
+
+  #ghost.thinking{
+    box-shadow:0 0 60px rgba(0,242,255,.65),0 0 130px rgba(255,0,255,.3);
+    animation:orbFloat 4s ease-in-out infinite,orbPulse 1.1s ease-in-out infinite;
+  }
+  @keyframes orbPulse{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-30px) scale(1.12)}}
+
+  #ghost.combat{
+    background:linear-gradient(45deg,#ff0044,#ff6600)!important;
+    box-shadow:0 0 50px rgba(255,0,68,.6)!important;
+    animation:orbGlitch .12s ease-in-out 5,orbFloat 4s ease-in-out infinite!important;
+  }
+  @keyframes orbGlitch{
+    0%{transform:translate(0) scale(1)}25%{transform:translate(8px,-6px) scale(1.08)}
+    50%{transform:translate(-10px,4px) scale(.94)}75%{transform:translate(5px,7px) scale(1.06)}100%{transform:translate(0) scale(1)}
+  }
+
+  #ghost.explore{
+    background:linear-gradient(45deg,#00ffa3,#00b4ff)!important;
+    box-shadow:0 0 50px rgba(0,255,163,.35),0 0 90px rgba(0,180,255,.15)!important;
+    animation:orbFloat 5s ease-in-out infinite!important;
+  }
+
+  #ghost.deflect{
+    background:#fff!important;box-shadow:0 0 90px rgba(255,255,255,.7)!important;
+    animation:orbDeflect .25s ease-in-out 3!important;
+  }
+  @keyframes orbDeflect{0%,100%{transform:scale(1)}50%{transform:scale(1.3) rotate(8deg)}}
+
+  /* ═══ MAIN MENU ═══ */
+  #menu-screen{
+    position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;
+    background:#050505;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    transition:opacity .8s ease;
+  }
+  #menu-screen.hidden{opacity:0;pointer-events:none}
+
+  .menu-title{
+    font-size:4rem;font-weight:800;letter-spacing:12px;
+    background:linear-gradient(90deg,#00f2ff,#ff00ff);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
+    margin-bottom:10px;
+    animation:menuPulse 3s ease-in-out infinite;
+    user-select:none;
+  }
+  @keyframes menuPulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.85;filter:brightness(1.2)}}
+
+  .menu-subtitle{
+    color:#333;font-size:.85rem;letter-spacing:6px;margin-bottom:60px;user-select:none;
+  }
+
+  .menu-doors{display:flex;gap:30px;flex-wrap:wrap;justify-content:center}
+
+  .door{
+    width:180px;height:240px;
+    border:1px solid #1a1a1a;
+    background:linear-gradient(180deg,#0a0a0a 0%,#111 100%);
+    border-radius:8px;
+    display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
+    padding-bottom:28px;
+    cursor:pointer;
+    position:relative;
+    overflow:hidden;
+    transition:all .35s ease;
+  }
+  .door:hover{
+    border-color:#00f2ff;
+    box-shadow:0 0 30px rgba(0,242,255,.15),0 0 60px rgba(0,242,255,.05);
+    transform:translateY(-4px);
+  }
+  .door:active{transform:translateY(0);box-shadow:0 0 15px rgba(0,242,255,.2)}
+
+  .door-glow{
+    position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);
+    width:50px;height:50px;border-radius:50%;
+    filter:blur(25px);opacity:.3;
+    transition:opacity .35s ease;
+  }
+  .door:hover .door-glow{opacity:.6}
+
+  .door-label{
+    font-size:.85rem;font-weight:600;letter-spacing:3px;color:#555;
+    transition:color .35s ease;position:relative;z-index:1;
+  }
+  .door:hover .door-label{color:#fff}
+
+  .door-num{
+    font-size:2.5rem;font-weight:800;color:#111;margin-bottom:14px;
+    transition:color .35s ease;position:relative;z-index:1;
+  }
+  .door:hover .door-num{color:#222}
+
+  .door.disabled{opacity:.25;cursor:not-allowed}
+  .door.disabled:hover{border-color:#1a1a1a;box-shadow:none;transform:none}
+
+  /* Door colors */
+  .door-new .door-glow{background:#00f2ff}
+  .door-continue .door-glow{background:#ff9900}
+  .door-credits .door-glow{background:#ff00ff}
+
+  /* ═══ CREDITS OVERLAY ═══ */
+  #credits-overlay{
+    position:fixed;top:0;left:0;width:100%;height:100%;z-index:250;
+    background:rgba(5,5,5,.95);
+    display:none;justify-content:center;align-items:center;
+    flex-direction:column;
+  }
+  #credits-overlay.show{display:flex}
+  .credits-text{
+    color:#444;font-size:1rem;line-height:2.2;text-align:center;letter-spacing:2px;
+  }
+  .credits-text span{color:#00f2ff}
+  .credits-close{
+    margin-top:40px;color:#333;font-size:.75rem;letter-spacing:4px;cursor:pointer;
+    transition:color .3s;
+  }
+  .credits-close:hover{color:#fff}
+
+  /* ═══ TERMINAL ═══ */
+  #terminal{
+    flex:1;overflow-y:auto;padding:60px 15% 20px;
+    display:flex;flex-direction:column;gap:20px;scrollbar-width:none;
+    display:none; /* hidden until game starts */
+  }
+  #terminal::-webkit-scrollbar{display:none}
+
+  .line{font-size:1.25rem;line-height:1.7;max-width:900px;animation:fadeUp .4s ease-out forwards;opacity:0}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+  .usr{color:#666;font-style:italic}
+  .sys{color:#444;font-size:.95rem;letter-spacing:.05em}
+  .err{color:#ff3355;font-size:.95rem}
+  .tag{color:#00f2ff;font-weight:600}
+  .action{color:#ff9900;font-weight:500}
+  .dmg{color:#ff3355}
+  .hint{font-size:.82rem;color:#333;margin-top:3px}
+
+  /* ═══ CHOICE BUTTONS (for male/female, etc.) ═══ */
+  .choice-row{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap}
+  .choice-btn{
+    background:transparent;border:1px solid #222;color:#555;
+    padding:8px 22px;border-radius:4px;font-family:inherit;font-size:.9rem;
+    cursor:pointer;letter-spacing:1px;transition:all .25s ease;
+  }
+  .choice-btn:hover{border-color:#00f2ff;color:#00f2ff;box-shadow:0 0 15px rgba(0,242,255,.1)}
+  .choice-btn:active{background:rgba(0,242,255,.05)}
+
+  .dots{display:inline-flex;gap:5px;align-items:center}
+  .dots i{width:5px;height:5px;background:rgba(0,242,255,.5);border-radius:50%;animation:dotAnim 1.4s ease-in-out infinite;display:block}
+  .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
+  @keyframes dotAnim{0%,60%,100%{opacity:.3;transform:scale(.8)}30%{opacity:1;transform:scale(1.3)}}
+
+  .typcur{display:inline-block;width:2px;height:1.1em;background:#00f2ff;margin-left:2px;vertical-align:text-bottom;animation:curBlink .7s step-end infinite}
+  @keyframes curBlink{0%,100%{opacity:1}50%{opacity:0}}
+
+  /* ═══ BOTTOM BAR ═══ */
+  #bar{
+    height:100px;background:rgba(0,0,0,.92);border-top:1px solid #222;
+    display:flex;align-items:center;padding:0 15%;flex-shrink:0;
+    display:none; /* hidden until game starts */
+  }
+  #loc{color:#00f2ff;font-weight:800;letter-spacing:4px;margin-right:40px;font-size:.9rem;white-space:nowrap;user-select:none}
+  #inp{background:0;border:0;color:#fff;font-size:1.2rem;flex:1;outline:0;font-family:inherit;font-weight:300;caret-color:#00f2ff}
+  #inp::placeholder{color:#2a2a2a}
+  #inp:disabled{opacity:.35}
+
+  @media(max-width:768px){
+    .menu-title{font-size:2.4rem;letter-spacing:6px}
+    .menu-subtitle{font-size:.65rem;letter-spacing:4px;margin-bottom:40px}
+    .door{width:140px;height:190px;padding-bottom:20px}
+    .door-num{font-size:2rem;margin-bottom:10px}
+    .door-label{font-size:.7rem;letter-spacing:2px}
+    .menu-doors{gap:16px}
+    #terminal{padding:35px 5% 12px}
+    #bar{padding:0 5%;height:75px}
+    #loc{letter-spacing:2px;font-size:.68rem;margin-right:14px}
+    #inp{font-size:1rem}
+    .line{font-size:1.02rem}
+    #ghost{width:58px;height:58px;top:6%;right:4%}
+    .eye{width:7px;height:7px;margin:3px}
+  }
+  @media(max-width:400px){
+    .menu-title{font-size:1.8rem;letter-spacing:4px}
+    .door{width:120px;height:160px}
+    .door-num{font-size:1.5rem}
+    #terminal{padding:25px 4% 10px}
+    #bar{padding:0 4%;height:65px}
+    #loc{font-size:.6rem;letter-spacing:1.5px;margin-right:10px}
+    .line{font-size:.95rem}
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ MAIN MENU (3 DOORS) ═══ -->
+<div id="menu-screen">
+  <div class="menu-title">OSIRIS</div>
+  <div class="menu-subtitle">THE LATTICE AWAITS</div>
+  <div class="menu-doors">
+    <div class="door door-new" onclick="doorNewPlayer()">
+      <div class="door-glow"></div>
+      <div class="door-num">I</div>
+      <div class="door-label">NEW PLAYER</div>
+    </div>
+    <div class="door door-continue" id="door-continue" onclick="doorContinue()">
+      <div class="door-glow"></div>
+      <div class="door-num">II</div>
+      <div class="door-label">CONTINUE</div>
+    </div>
+    <div class="door door-credits" onclick="doorCredits()">
+      <div class="door-glow"></div>
+      <div class="door-num">III</div>
+      <div class="door-label">CREDITS</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CREDITS OVERLAY ═══ -->
+<div id="credits-overlay">
+  <div class="credits-text">
+    <span>OSIRIS</span><br>
+    A game born in the Void<br><br>
+    Created by [Your Name]<br>
+    Narrated by OSIRIS<br>
+    Powered by The Lattice<br><br>
+    <span>2025</span>
+  </div>
+  <div class="credits-close" onclick="closeCredits()">[ RETURN ]</div>
+</div>
+
+<!-- ═══ GHOST ORB ═══ -->
+<div id="ghost"><div class="eye"></div><div class="eye"></div></div>
+
+<!-- ═══ TERMINAL ═══ -->
+<div id="terminal"></div>
+
+<!-- ═══ BOTTOM BAR ═══ -->
+<div id="bar">
+  <div id="loc">VOID_LOBBY</div>
+  <input type="text" id="inp" placeholder="Type a command..." autofocus autocomplete="off" spellcheck="false">
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  OSIRIS FRONTEND — Menu + Character Creation + Save + Game
+// ════════════════════════════════════════════════════════════════
+
+// ─── DOM REFERENCES ──────────────────────────────────────────
+var termEl   = document.getElementById('terminal');
+var inpEl    = document.getElementById('inp');
+var ghostEl  = document.getElementById('ghost');
+var locEl    = document.getElementById('loc');
+var menuEl   = document.getElementById('menu-screen');
+var contDoor = document.getElementById('door-continue');
+var creditsEl= document.getElementById('credits-overlay');
+
+var locked = false;
+
+// ─── GAME STATE ──────────────────────────────────────────────
+// This object holds EVERYTHING about the player's session.
+// It gets saved to localStorage so the player can return later.
+var gameState = {
+  character: {
+    sex: '',
+    age: '',
+    lifeRole: '',
+    level: 1,
+    xp: 0,
+    hp: 100,
+    maxHp: 100,
+    mana: 50,
+    maxMana: 50,
+    gold: 0
+  },
+  world: {
+    location: 'VOID_LOBBY',
+    chapter: 1
+  },
+  inventory: [],
+  quests: [],
+  flags: {},
+  summary: '',       // short AI-generated story summary (updated periodically)
+  recentLog: []      // last 4 exchanges only (for context)
+};
+
+// ─── SAVE / LOAD ─────────────────────────────────────────────
+var SAVE_KEY = 'osiris_save';
+
+function saveGame() {
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
+  } catch(e) {
+    console.error('[OSIRIS] Save failed:', e);
+  }
+}
+
+function loadGame() {
+  try {
+    var raw = localStorage.getItem(SAVE_KEY);
+    if (!raw) return false;
+    var parsed = JSON.parse(raw);
+    if (parsed && parsed.character && parsed.world) {
+      gameState = parsed;
+      return true;
+    }
+    return false;
+  } catch(e) {
+    console.error('[OSIRIS] Load failed:', e);
+    return false;
+  }
+}
+
+function hasSave() {
+  try {
+    return localStorage.getItem(SAVE_KEY) !== null;
+  } catch(e) {
+    return false;
+  }
+}
+
+function deleteSave() {
+  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
+}
+
+// ─── ON PAGE LOAD: check for save ────────────────────────────
+// If no save exists, grey out the Continue door
+if (!hasSave()) {
+  contDoor.classList.add('disabled');
+}
+
+// ─── MENU ACTIONS ────────────────────────────────────────────
+function hideMenu() {
+  menuEl.classList.add('hidden');
+  // After fade animation, remove from flow
+  setTimeout(function() { menuEl.style.display = 'none'; }, 800);
+}
+
+function showGame() {
+  ghostEl.style.display = 'flex';
+  termEl.style.display = 'flex';
+  document.getElementById('bar').style.display = 'flex';
+}
+
+function doorCredits() {
+  creditsEl.classList.add('show');
+}
+
+function closeCredits() {
+  creditsEl.classList.remove('show');
+}
+
+function doorContinue() {
+  if (!hasSave()) return; // do nothing if no save
+  var loaded = loadGame();
+  if (!loaded) return;
+
+  hideMenu();
+  showGame();
+  setLoc(gameState.world.location);
+
+  setTimeout(function() {
+    bootContinue();
+  }, 900);
+}
+
+function doorNewPlayer() {
+  // Delete any existing save — fresh start
+  deleteSave();
+  hideMenu();
+  showGame();
+
+  setTimeout(function() {
+    beginCharacterCreation();
+  }, 900);
+}
+
+// ════════════════════════════════════════════════════════════════
+//  BACKEND API CALL
+//  Now sends a compact context instead of full chat history.
+// ════════════════════════════════════════════════════════════════
+async function callOsiris(userInput, actionLabel, extraContext) {
+  // Build the compact payload
+  var payload = {
+    input: userInput,
+    location: gameState.world.location,
+    action: actionLabel || 'GENERAL',
+    chapter: gameState.world.chapter,
+    character: {
+      sex: gameState.character.sex,
+      age: gameState.character.age,
+      lifeRole: gameState.character.lifeRole,
+      level: gameState.character.level,
+      hp: gameState.character.hp,
+      maxHp: gameState.character.maxHp
+    },
+    inventory: gameState.inventory.slice(0, 10).join(', '),
+    activeQuest: gameState.quests.length > 0 ? gameState.quests[0] : '',
+    summary: gameState.summary || '',
+    recentLog: gameState.recentLog.slice(-4)
+  };
+
+  // Allow extra context for special situations (like character creation)
+  if (extraContext) {
+    payload.extra = extraContext;
+  }
+
+  try {
+    var res = await fetch('/api/osiris', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    var contentType = res.headers.get('content-type') || '';
+    if (contentType.indexOf('application/json') === -1) {
+      console.error('[OSIRIS] Non-JSON response. Status:', res.status);
+      return { ok: false, error: 'NETWORK' };
+    }
+
+    var data = await res.json();
+
+    if (data.ok && data.text) {
+      // Update recent log (keep it short — max 4 exchanges = 8 entries)
+      gameState.recentLog.push({ role: 'user', text: userInput });
+      gameState.recentLog.push({ role: 'model', text: data.text });
+      if (gameState.recentLog.length > 8) {
+        gameState.recentLog = gameState.recentLog.slice(-8);
+      }
+      // Auto-save after every successful response
+      saveGame();
+      return { ok: true, text: data.text };
+    }
+
+    return { ok: false, error: data.error || 'API_FAIL' };
+  } catch (e) {
+    console.error('[OSIRIS] Fetch error:', e.message);
+    return { ok: false, error: 'NETWORK' };
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  INTENT DETECTION (unchanged from your original)
+// ════════════════════════════════════════════════════════════════
+function classifyAction(cmd) {
+  if (/\b(attack|hit|fight|kill|strike|punch|destroy)\s*(osiris|ghost|host|you|the ghost|the orb)/i.test(cmd)) return 'ATTACK_OSIRIS';
+  if (/\b(attack|fight|strike|hit|slash|shoot|kill|stab|punch|kick|cast|fire|block|parry)\b/i.test(cmd)) return 'COMBAT';
+  if (/\b(loot|open|grab|take|pick|steal|collect|gather|chest|crate|scavenge)\b/i.test(cmd)) return 'LOOT';
+  if (/\b(explore|look|examine|search|inspect|wander|enter|go|walk|move|travel|head|venture|scout|approach|around)\b/i.test(cmd)) return 'EXPLORE';
+  if (/\b(talk|speak|ask|greet|whisper|shout|negotiate|barter|hail)\b/i.test(cmd)) return 'TALK';
+  if (/\b(rest|sleep|camp|wait|heal|meditate|sit)\b/i.test(cmd)) return 'REST';
+  return 'GENERAL';
+}
+
+function detectLocation(cmd) {
+  if (/neon|city|street|district/i.test(cmd)) return 'NEON_DISTRICT';
+  if (/rust|market|bazaar|trade/i.test(cmd)) return 'RUST_BAZAAR';
+  if (/echo|sanctum|temple/i.test(cmd)) return 'ECHO_SANCTUM';
+  if (/data|catacomb|underground|deep/i.test(cmd)) return 'DATA_CATACOMBS';
+  if (/harbor|drift|sea|ship|shore/i.test(cmd)) return 'DRIFT_HARBOR';
+  if (/spire|phantom|tower|climb/i.test(cmd)) return 'PHANTOM_SPIRE';
+  if (/void|lobby|home|return|back/i.test(cmd)) return 'VOID_LOBBY';
+  return null;
+}
+
+// ════════════════════════════════════════════════════════════════
+//  DOM HELPERS (unchanged from your original)
+// ════════════════════════════════════════════════════════════════
+function addLine(html, cls) {
+  var div = document.createElement('div');
+  div.className = 'line' + (cls ? ' ' + cls : '');
+  div.innerHTML = html;
+  termEl.appendChild(div);
+  termEl.scrollTop = termEl.scrollHeight;
+  return div;
+}
+
+function showLoader() {
+  var div = document.createElement('div');
+  div.className = 'line'; div.id = 'ldr';
+  div.innerHTML = '<span class="tag">[OSIRIS]:</span> <span style="color:#555">System processing</span> <span class="dots"><i></i><i></i><i></i></span>';
+  termEl.appendChild(div);
+  termEl.scrollTop = termEl.scrollHeight;
+}
+
+function hideLoader() {
+  var el = document.getElementById('ldr');
+  if (el) el.remove();
+}
+
+function setOrb(state, ms) {
+  ghostEl.className = state ? state : '';
+  if (ms) setTimeout(function() { ghostEl.className = ''; }, ms);
+}
+
+function setLoc(name) {
+  gameState.world.location = name;
+  locEl.textContent = name;
+}
+
+function strikeHost() {
+  ghostEl.style.top = 'calc(100% - 200px)';
+  setOrb('deflect');
+  setTimeout(function() {
+    ghostEl.style.top = '14%';
+    ghostEl.className = '';
+  }, 1200);
+}
+
+// Typewriter effect (unchanged)
+function typeWrite(container, text) {
+  return new Promise(function(resolve) {
+    container.innerHTML = '<span class="tag">[OSIRIS]:</span> ';
+    var span = document.createElement('span');
+    container.appendChild(span);
+    var cursor = document.createElement('span');
+    cursor.className = 'typcur';
+    container.appendChild(cursor);
+    termEl.scrollTop = termEl.scrollHeight;
+    var i = 0;
+    function next() {
+      if (i < text.length) {
+        span.textContent += text.charAt(i);
+        i++;
+        termEl.scrollTop = termEl.scrollHeight;
+        setTimeout(next, 25 + Math.random() * 18);
+      } else {
+        cursor.remove();
+        resolve();
+      }
+    }
+    next();
+  });
+}
+
+// Error messages (unchanged)
+var ERROR_MAP = {
+  NO_KEY: 'Server has no API key configured. Check .env file.',
+  AUTH: 'API key is invalid or disabled.',
+  NETWORK: 'Cannot reach server. Is it running on localhost:3000?',
+  RATE_LIMIT: 'Too many requests. Wait a moment.',
+  BLOCKED: 'Response filtered by safety protocols.',
+  EMPTY: 'OSIRIS returned silence.',
+  API_FAIL: 'Neural link unstable. Check server logs.'
+};
+
+function showError(code) {
+  addLine('<span class="err"><b>[SYSTEM ERROR]:</b> ' + (ERROR_MAP[code] || ERROR_MAP.API_FAIL) + '</span>');
+}
+
+// Fallbacks (unchanged)
+var FALLBACKS = {
+  ATTACK_OSIRIS: ['I am code, not flesh. Your blade passes through me like light through glass.', 'Amusing. You cannot kill what was never alive.', 'I exist between the lines. Your weapon has no syntax for that.'],
+  COMBAT: ['Steel meets data. The simulation trembles.', 'A clean strike. The system registers the impact.', 'The creature recoils. You press forward.'],
+  EXPLORE: ['The path shifts as you walk.', 'New geometry renders around you.', 'You push deeper. The world pushes back.'],
+  LOOT: ['Fragments of corrupted data. Useful, perhaps.', 'The container yields its contents reluctantly.', 'Something glints in the debris.'],
+  GENERAL: ['The terminal hums.', 'The void absorbs your words.', 'Your signal echoes and fades.']
+};
+
+function pickFallback(action) {
+  var pool = FALLBACKS[action] || FALLBACKS.GENERAL;
+  return pool[Math.floor(Math.random() * pool.length)];
+}
+
+// ════════════════════════════════════════════════════════════════
+//  UTILITY: Wait for player to type something in the input bar
+// ════════════════════════════════════════════════════════════════
+function waitForInput(placeholder) {
+  return new Promise(function(resolve) {
+    inpEl.placeholder = placeholder || 'Type here...';
+    inpEl.disabled = false;
+    inpEl.value = '';
+    inpEl.focus();
+
+    function handler(e) {
+      if (e.key === 'Enter' && inpEl.value.trim()) {
+        var val = inpEl.value.trim();
+        inpEl.removeEventListener('keydown', handler);
+        inpEl.disabled = true;
+        inpEl.value = '';
+        resolve(val);
+      }
+    }
+    inpEl.addEventListener('keydown', handler);
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  UTILITY: Show clickable choice buttons and wait for a pick
+// ════════════════════════════════════════════════════════════════
+function waitForChoice(options) {
+  return new Promise(function(resolve) {
+    inpEl.disabled = true;
+    var row = document.createElement('div');
+    row.className = 'line';
+    var inner = document.createElement('div');
+    inner.className = 'choice-row';
+
+    options.forEach(function(opt) {
+      var btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = opt;
+      btn.addEventListener('click', function() {
+        // Disable all buttons after click
+        inner.querySelectorAll('.choice-btn').forEach(function(b) {
+          b.disabled = true;
+          b.style.opacity = '.25';
+          b.style.cursor = 'default';
+        });
+        // Highlight the chosen one
+        btn.style.opacity = '1';
+        btn.style.borderColor = '#00f2ff';
+        btn.style.color = '#00f2ff';
+        resolve(opt);
+      });
+      inner.appendChild(btn);
+    });
+
+    row.appendChild(inner);
+    termEl.appendChild(row);
+    termEl.scrollTop = termEl.scrollHeight;
+  });
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CHARACTER CREATION — OSIRIS asks 3 questions, one by one
+// ════════════════════════════════════════════════════════════════
+async function beginCharacterCreation() {
+  function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+  addLine('<b>[SYSTEM INITIALIZED]</b>', 'sys');
+  await wait(500);
+  addLine('<span class="sys">Establishing neural link...</span>');
+  await wait(800);
+
+  setOrb('thinking');
+
+  // ── OSIRIS greeting ──
+  var g = addLine('');
+  await typeWrite(g, "Welcome to the Void. Before we continue, I need to know who stands before me.");
+  await wait(600);
+  ghostEl.className = '';
+
+  // ── Question 1: Sex ──
+  addLine('<span class="sys">— IDENTITY SCAN: PHASE 1 —</span>');
+  await wait(300);
+  var q1 = addLine('');
+  await typeWrite(q1, "What form do you wear? Male, or female?");
+
+  var sex = await waitForChoice(['MALE', 'FEMALE']);
+  addLine('> ' + sex, 'usr');
+  gameState.character.sex = sex.toLowerCase();
+  await wait(400);
+
+  var r1 = addLine('');
+  await typeWrite(r1, sex === 'MALE'
+    ? "A man, then. The Lattice does not care. But I will remember."
+    : "A woman, then. The Lattice does not care. But I will remember.");
+  await wait(500);
+
+  // ── Question 2: Age ──
+  addLine('<span class="sys">— IDENTITY SCAN: PHASE 2 —</span>');
+  await wait(300);
+  var q2 = addLine('');
+  await typeWrite(q2, "How many years has the old world carved into you?");
+
+  var age = await waitForInput('Enter your age...');
+  addLine('> ' + age, 'usr');
+  gameState.character.age = age;
+  await wait(400);
+
+  var r2 = addLine('');
+  await typeWrite(r2, "Noted. Time is different here. You will feel it soon enough.");
+  await wait(500);
+
+  // ── Question 3: Life Role (the important one) ──
+  addLine('<span class="sys">— IDENTITY SCAN: PHASE 3 —</span>');
+  await wait(300);
+  var q3 = addLine('');
+  await typeWrite(q3, "Before the Void found you — what were you? What did you do in that old life?");
+  await wait(200);
+  addLine('<span class="hint">(Type anything: student, soldier, thief, mechanic, drifter, plumber, mage, hunter...)</span>');
+
+  var lifeRole = await waitForInput('What were you in the old world?');
+  addLine('> ' + lifeRole, 'usr');
+  gameState.character.lifeRole = lifeRole.toLowerCase().trim();
+  await wait(400);
+
+  setOrb('thinking');
+  var r3 = addLine('');
+  await typeWrite(r3, "A " + gameState.character.lifeRole + ". Interesting. The Lattice will shape your path from what you were.");
+  await wait(600);
+  ghostEl.className = '';
+
+  // ── Save the initial state ──
+  gameState.world.chapter = 1;
+  gameState.world.location = 'VOID_LOBBY';
+  gameState.summary = 'New traveler. ' + gameState.character.sex + ', age ' + gameState.character.age + ', former ' + gameState.character.lifeRole + '. Just arrived in the Lattice. Chapter 1 beginning.';
+  saveGame();
+
+  addLine('<span class="sys">— IDENTITY LOCKED. CHAPTER 1 LOADING. —</span>');
+  await wait(800);
+
+  // ── Generate personalized Chapter 1 opening via AI ──
+  await generateChapterOne();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  GENERATE PERSONALIZED CHAPTER 1 OPENING
+// ════════════════════════════════════════════════════════════════
+async function generateChapterOne() {
+  function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+  setOrb('thinking');
+  showLoader();
+
+  // We send a special instruction to the AI to craft a personalized opening
+  var prompt = '[SYSTEM: Generate the Chapter 1 opening for this new player. ' +
+    'They are a ' + gameState.character.sex + ', age ' + gameState.character.age +
+    ', who was a "' + gameState.character.lifeRole + '" in their old life. ' +
+    'Create a dramatic, personal opening that connects their old life (' + gameState.character.lifeRole +
+    ') to how they arrived in the Void Lobby of The Lattice. ' +
+    'Make it feel like a cinematic intro. 3-4 sentences. ' +
+    'End by hinting they should explore or speak to OSIRIS.]';
+
+  var result = await callOsiris(prompt, 'SYSTEM', 'chapter1_opening');
+  hideLoader();
+  ghostEl.className = '';
+
+  if (result.ok) {
+    var div = addLine('');
+    await typeWrite(div, result.text);
+  } else {
+    // Fallback if AI fails — still a good opening
+    var fb = addLine('');
+    await typeWrite(fb, "You were a " + gameState.character.lifeRole +
+      " once. That life ended when the static found you. Now you stand in the Void Lobby, " +
+      "the entry point of a dying world called The Lattice. The air hums with dead data. Something watches.");
+    showError(result.error);
+  }
+
+  await wait(300);
+  addLine('<span style="color:#00f2ff;font-size:.78rem">CHAPTER 1 — THE LATTICE AWAITS</span>', 'sys');
+  await wait(200);
+  addLine('<span class="hint">(Try: <b>explore neon district</b> · <b>attack data-wolf</b> · <b>loot the chest</b> · <b>talk to osiris</b>)</span>');
+
+  setLoc('VOID_LOBBY');
+  locEl.textContent = 'VOID_LOBBY';
+
+  // Now enable the normal game loop
+  startGameLoop();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CONTINUE (load existing save)
+// ════════════════════════════════════════════════════════════════
+async function bootContinue() {
+  function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+
+  addLine('<b>[SYSTEM INITIALIZED]</b>', 'sys');
+  await wait(400);
+  addLine('<span class="sys">Save data found. Restoring neural link...</span>');
+  await wait(600);
+
+  setOrb('thinking');
+  showLoader();
+
+  var prompt = '[SYSTEM: The player is returning to a saved game. ' +
+    'They are a ' + gameState.character.sex + ', age ' + gameState.character.age +
+    ', former ' + gameState.character.lifeRole + '. ' +
+    'Current location: ' + gameState.world.location + '. Chapter: ' + gameState.world.chapter + '. ' +
+    'Story so far: ' + (gameState.summary || 'Early in their journey.') + ' ' +
+    'Welcome them back in character as OSIRIS. 2-3 sentences. Remind them where they are.]';
+
+  var result = await callOsiris(prompt, 'SYSTEM', 'continue');
+  hideLoader();
+  ghostEl.className = '';
+
+  if (result.ok) {
+    var div = addLine('');
+    await typeWrite(div, result.text);
+  } else {
+    var fb = addLine('');
+    await typeWrite(fb, "You return. The Lattice remembers you, " + gameState.character.lifeRole +
+      ". You stand in " + gameState.world.location.replace(/_/g, ' ') + ". The hum resumes.");
+    showError(result.error);
+  }
+
+  await wait(300);
+  addLine('<span style="color:#00f2ff;font-size:.78rem">NEURAL LINK: RESTORED</span>', 'sys');
+  addLine('<span class="hint">(Try: <b>explore</b> · <b>attack</b> · <b>loot</b> · <b>talk to osiris</b>)</span>');
+
+  startGameLoop();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  MAIN GAME LOOP
+//  This activates the input bar for normal gameplay commands.
+// ════════════════════════════════════════════════════════════════
+function startGameLoop() {
+  locked = false;
+  inpEl.disabled = false;
+  inpEl.placeholder = 'Type a command...';
+  inpEl.focus();
+
+  // Attach the main input handler
+  inpEl.addEventListener('keydown', gameInputHandler);
+}
+
+function gameInputHandler(e) {
+  if (e.key === 'Enter') processCommand(inpEl.value);
+}
+
+async function processCommand(rawText) {
+  if (!rawText.trim() || locked) return;
+  locked = true;
+  inpEl.value = '';
+  inpEl.disabled = true;
+
+  addLine('> ' + rawText, 'usr');
+  var cmd = rawText.toLowerCase().trim();
+  var action = classifyAction(cmd);
+
+  // Location change
+  var newLoc = detectLocation(cmd);
+  if (newLoc && newLoc !== gameState.world.location) {
+    setLoc(newLoc);
+    addLine('<span class="sys">— SECTOR SHIFT: ' + gameState.world.location + ' —</span>');
+  }
+
+  // Orb visuals per action type
+  if (action === 'ATTACK_OSIRIS') {
+    strikeHost();
+    addLine('<span class="action">[SYSTEM]: Attack deflected. OSIRIS is immortal code.</span>');
+  } else if (action === 'COMBAT') {
+    setOrb('combat', 2800);
+    addLine('<span class="dmg">[COMBAT]: You launch your attack!</span>');
+  } else if (action === 'EXPLORE' || action === 'LOOT') {
+    setOrb('explore', 3500);
+  } else {
+    setOrb('thinking');
+  }
+
+  // Call backend
+  showLoader();
+  var result = await callOsiris(rawText, action);
+  hideLoader();
+
+  if (result.ok) {
+    if (action !== 'COMBAT' && action !== 'EXPLORE' && action !== 'LOOT' && action !== 'ATTACK_OSIRIS') {
+      ghostEl.className = '';
+    }
+    var msgDiv = addLine('');
+    await typeWrite(msgDiv, result.text);
+  } else {
+    ghostEl.className = '';
+    showError(result.error);
+    addLine('<span class="tag">[OSIRIS]:</span> ' + pickFallback(action));
+  }
+
+  setTimeout(function() { ghostEl.className = ''; }, 4000);
+  locked = false;
+  inpEl.disabled = false;
+  inpEl.focus();
+}
+
+// ════════════════════════════════════════════════════════════════
+//  NO AUTO-BOOT — The menu handles everything now.
+//  The old boot() function is replaced by the menu doors.
+// ════════════════════════════════════════════════════════════════
+</script>
+</body>
+</html>

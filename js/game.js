@@ -13,26 +13,28 @@
   'use strict';
 
   // ─── MODE SWITCH ───────────────────────────────────────────
-  // "offline" = all narration from local data (no server needed)
-  // "ai"     = narration calls /api/osiris (requires backend)
   var GAME_MODE = "offline";
 
-  // ─── The live game state (in memory) ───────────────────────
+  // ─── The live game state ───────────────────────────────────
   var gs = Save.freshState();
 
-  // ─── DOM references for menu ───────────────────────────────
+  // ─── DOM ───────────────────────────────────────────────────
   var menuEl    = document.getElementById('menu-screen');
   var contDoor  = document.getElementById('door-continue');
   var creditsEl = document.getElementById('credits-overlay');
   var inpEl     = document.getElementById('inp');
 
-  var locked = false; // prevents double-input
+  // ─── Lock flag (prevents double input) ─────────────────────
+  var locked = false;
 
-  // Grey out Continue if no save exists
+  // ─── Track if game loop listener is already attached ───────
+  var gameLoopActive = false;
+
+  // Grey out Continue if no save
   if (!Save.exists()) contDoor.classList.add('disabled');
 
   // ════════════════════════════════════════════════════════════
-  //  SCENE DATABASE (offline narration)
+  //  SCENE DATABASE
   // ════════════════════════════════════════════════════════════
   var SCENES = {
     VOID_LOBBY: {
@@ -224,8 +226,6 @@
   // ════════════════════════════════════════════════════════════
   //  NARRATION ENGINE
   // ════════════════════════════════════════════════════════════
-  // Returns a random line from the scene data.
-  // In "ai" mode (future), this could call the API instead.
   function getNarration(location, actionType) {
     if (GAME_MODE === "offline") {
       var scene = SCENES[location];
@@ -234,8 +234,7 @@
       if (!pool || pool.length === 0) return "Nothing happens. The silence continues.";
       return pool[Math.floor(Math.random() * pool.length)];
     }
-    // Future AI mode would go here:
-    // if (GAME_MODE === "ai") { return await callOsirisAPI(...); }
+    // Future: if (GAME_MODE === "ai") { ... }
     return "The system hums.";
   }
 
@@ -293,7 +292,6 @@
       round++;
       await Host.wait(350);
 
-      // Player attacks
       var pDmg = Math.floor(10 + Math.random() * 12) - t.defense;
       if (pDmg < 1) pDmg = 1;
       enemy.hp -= pDmg;
@@ -303,7 +301,6 @@
 
       await Host.wait(400);
 
-      // Enemy attacks
       var eDmg = Math.floor(t.attack[0] + Math.random() * (t.attack[1] - t.attack[0]));
       takeDamage(eDmg);
       await Host.speak(getEnemyText(enemyId, 'hitPlayer'));
@@ -345,7 +342,7 @@
         gs.flags.wolfKilled) {
       gs.quests.splice(gs.quests.indexOf('reach_gatekeeper'), 1);
       await Host.wait(500);
-      Host.addLine('<span class="quest-msg">[QUEST COMPLETE]: Reach the Gatekeeper</span>');
+      Host.addLine('<span class="action">[QUEST COMPLETE]: Reach the Gatekeeper</span>');
       await Host.speak("The Gatekeeper nods. 'You carry death on your hands and purpose in your steps. The gate recognizes you.' The arch flares. Chapter 1 is complete.");
       addXP(50);
       addGold(20);
@@ -446,14 +443,14 @@
     Save.save(gs);
     Host.setLocation('VOID_LOBBY');
 
-    // Chapter 1 intro (personalized)
+    // Chapter 1 (personalized)
     Host.addLine('<span class="sys">— CHAPTER 1: THE LATTICE AWAITS —</span>');
     await Host.wait(600);
     var introText = StoryIntro.get(gs.character.lifeRole);
     await Host.speak(introText);
     await Host.wait(400);
 
-    // Quest announcement
+    // Quest
     Host.addLine('<span class="action">[QUEST]: Reach the Gatekeeper</span>');
     await Host.speak("A quest crystallizes: find the Gatekeeper at the Gate Terminal beyond the Old Market. Reach them. Prove you belong.");
     await Host.wait(300);
@@ -491,15 +488,31 @@
 
   // ════════════════════════════════════════════════════════════
   //  MAIN GAME LOOP
+  //  The keydown listener is a NAMED function attached ONCE.
+  //  startGameLoop only unlocks input — it never re-attaches.
   // ════════════════════════════════════════════════════════════
+
+  // This is the single, named handler. Defined once, attached once.
+  function onGameInput(e) {
+    if (e.key === 'Enter' && !locked && inpEl.value.trim()) {
+      processCommand(inpEl.value);
+    }
+  }
+
   function startGameLoop() {
     locked = false;
     Host.enableInput();
-    inpEl.addEventListener('keydown', function handler(e) {
-      if (e.key === 'Enter') processCommand(inpEl.value);
-    });
+
+    // Only attach the listener ONCE, ever
+    if (!gameLoopActive) {
+      gameLoopActive = true;
+      inpEl.addEventListener('keydown', onGameInput);
+    }
   }
 
+  // ════════════════════════════════════════════════════════════
+  //  COMMAND PARSER
+  // ════════════════════════════════════════════════════════════
   async function processCommand(rawText) {
     if (!rawText.trim() || locked) return;
     locked = true;
@@ -515,15 +528,15 @@
     if (/^help$/i.test(cmd)) {
       Host.addLine('<span class="sys">Commands:</span>');
       Host.addLine('<span class="hint"><b>look</b> — describe surroundings</span>');
-      Host.addLine('<span class="hint"><b>explore</b> — investigate</span>');
+      Host.addLine('<span class="hint"><b>explore</b> — investigate the area</span>');
       Host.addLine('<span class="hint"><b>go [north/south/east/west]</b> — move</span>');
-      Host.addLine('<span class="hint"><b>search</b> — find items</span>');
-      Host.addLine('<span class="hint"><b>attack</b> — fight enemies</span>');
+      Host.addLine('<span class="hint"><b>search</b> — search for items</span>');
+      Host.addLine('<span class="hint"><b>attack</b> — fight (add target, e.g. "attack wolf")</span>');
       Host.addLine('<span class="hint"><b>talk</b> — speak or listen</span>');
       Host.addLine('<span class="hint"><b>rest</b> — recover HP</span>');
-      Host.addLine('<span class="hint"><b>inventory</b> — your items</span>');
-      Host.addLine('<span class="hint"><b>stats</b> — your character</span>');
-      Host.addLine('<span class="hint"><b>quests</b> — active quests</span>');
+      Host.addLine('<span class="hint"><b>inventory</b> — view items</span>');
+      Host.addLine('<span class="hint"><b>stats</b> — view character info</span>');
+      Host.addLine('<span class="hint"><b>quests</b> — view active quests</span>');
       done(); return;
     }
 
@@ -538,18 +551,26 @@
 
     // ── INVENTORY ──
     if (/^(inventory|inv|items|bag)$/i.test(cmd)) {
-      if (gs.inventory.length === 0) { Host.addLine('<span class="sys">Inventory is empty.</span>'); }
-      else {
+      if (gs.inventory.length === 0) {
+        Host.addLine('<span class="sys">Inventory is empty.</span>');
+      } else {
         Host.addLine('<span class="sys">— INVENTORY —</span>');
-        gs.inventory.forEach(function (item, i) { Host.addLine('<span class="sys">[' + (i+1) + '] ' + item + '</span>'); });
+        gs.inventory.forEach(function (item, i) {
+          Host.addLine('<span class="sys">[' + (i+1) + '] ' + item + '</span>');
+        });
       }
       done(); return;
     }
 
     // ── QUESTS ──
     if (/^quests?$/i.test(cmd)) {
-      if (gs.quests.length === 0) Host.addLine('<span class="sys">No active quests.</span>');
-      else gs.quests.forEach(function (q) { Host.addLine('<span class="action">[QUEST]: ' + q.replace(/_/g, ' ') + '</span>'); });
+      if (gs.quests.length === 0) {
+        Host.addLine('<span class="sys">No active quests.</span>');
+      } else {
+        gs.quests.forEach(function (q) {
+          Host.addLine('<span class="action">[QUEST]: ' + q.replace(/_/g, ' ') + '</span>');
+        });
+      }
       done(); return;
     }
 
@@ -558,10 +579,14 @@
       Host.setOrb('explore', 2500);
       await Host.speak(getNarration(loc, 'look'));
       if (scene && scene.exits) {
-        var exits = Object.keys(scene.exits).map(function (d) { return d + ' → ' + SCENES[scene.exits[d]].name; }).join(' | ');
+        var exits = Object.keys(scene.exits).map(function (d) {
+          return d + ' \u2192 ' + SCENES[scene.exits[d]].name;
+        }).join(' | ');
         Host.addLine('<span class="hint">Exits: ' + exits + '</span>');
       }
-      if (scene && scene.enemies && scene.enemies.length > 0) Host.addLine('<span class="hint">Danger: creatures nearby.</span>');
+      if (scene && scene.enemies && scene.enemies.length > 0) {
+        Host.addLine('<span class="hint">Danger: creatures have been seen here.</span>');
+      }
       done(); return;
     }
 
@@ -572,7 +597,7 @@
       done(); return;
     }
 
-    // ── GO ──
+    // ── GO / MOVE ──
     var goMatch = cmd.match(/^(go|move|walk|head|travel)\s+(north|south|east|west|n|s|e|w)$/i);
     if (goMatch) {
       var dirMap = { n:'north', s:'south', e:'east', w:'west', north:'north', south:'south', east:'east', west:'west' };
@@ -581,13 +606,13 @@
         var dest = scene.exits[dir];
         gs.world.location = dest;
         Host.setLocation(dest);
-        Host.addLine('<span class="sys">— ' + SCENES[dest].name.toUpperCase() + ' —</span>');
+        Host.addLine('<span class="sys">\u2014 ' + SCENES[dest].name.toUpperCase() + ' \u2014</span>');
         Host.setOrb('explore', 2500);
         await Host.speak(getNarration(dest, 'look'));
         Save.save(gs);
         await checkQuests();
       } else {
-        Host.addLine('<span class="sys">You can\'t go that way.</span>');
+        Host.addLine('<span class="sys">You can\'t go that way. There\'s nothing but void.</span>');
       }
       done(); return;
     }
@@ -599,8 +624,12 @@
       if (scene && scene.loot && scene.loot.length > 0 && Math.random() < 0.4) {
         var found = scene.loot[Math.floor(Math.random() * scene.loot.length)];
         var gm = found.match(/^(\d+)\s*gold$/i);
-        if (gm) { addGold(parseInt(gm[1])); }
-        else { gs.inventory.push(found); Save.save(gs); }
+        if (gm) {
+          addGold(parseInt(gm[1]));
+        } else {
+          gs.inventory.push(found);
+          Save.save(gs);
+        }
         Host.addLine('<span class="loot">Found: ' + found + '</span>');
       }
       done(); return;
@@ -608,12 +637,14 @@
 
     // ── ATTACK ──
     if (/^(attack|fight|kill|strike|hit)/i.test(cmd)) {
+      // Attacking OSIRIS
       if (/osiris|ghost|orb|host|watcher|you/i.test(cmd)) {
         Host.strikeHost();
         Host.addLine('<span class="action">[SYSTEM]: Attack deflected. OSIRIS is immortal.</span>');
         await Host.speak("I am the voice of this world. Your blade passes through me like light through glass.");
         done(); return;
       }
+      // Regular combat
       if (scene && scene.enemies && scene.enemies.length > 0) {
         await doCombat(scene.enemies[Math.floor(Math.random() * scene.enemies.length)]);
         await checkQuests();
@@ -642,22 +673,22 @@
 
     // ── UNKNOWN ──
     var unknowns = [
-      "The Lattice doesn't understand. Type 'help' for commands.",
-      "Your words dissolve. Try 'help' to see what you can do.",
-      "Nothing happens. Type 'help' for a list of commands."
+      "The Lattice doesn't understand that action. Type 'help' for commands.",
+      "Your words dissolve into the void. Try 'help' to see what you can do.",
+      "Nothing happens. The silence absorbs your intent. Type 'help' for a list of commands."
     ];
     await Host.speak(unknowns[Math.floor(Math.random() * unknowns.length)]);
     done();
   }
 
+  // Unlock input after every command completes
   function done() {
     locked = false;
     Host.enableInput();
   }
 
   // ════════════════════════════════════════════════════════════
-  //  EXPOSE MENU FUNCTIONS GLOBALLY
-  //  (called by onclick in the HTML)
+  //  EXPOSE MENU FUNCTIONS (called by onclick in the HTML)
   // ════════════════════════════════════════════════════════════
   window.Game = {
     doorNewPlayer: doorNewPlayer,

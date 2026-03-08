@@ -182,99 +182,99 @@
 
   var STAGE_ACTIONS = {
     calm: [
-      "[A thin flame appears in the dark. OSIRIS lights a cigar.]",
-      "[Smoke drifts across the terminal in a slow ribbon.]",
-      "[OSIRIS stands motionless. A silhouette against faint blue light.]",
-      "[The faint tap of a boot heel echoes once, then silence.]",
-      "[OSIRIS exhales. Smoke curls upward and dissolves into static.]",
-      "[A low hum fills the void. OSIRIS is listening.]",
-      "[The tip of the cigar glows amber in absolute darkness.]",
-      "[OSIRIS tilts his head slightly, as if hearing something far away.]"
+      "[A candle flickers somewhere in the dark. OSIRIS watches from the shadow.]",
+      "[Cold air moves through the terminal. Something unseen passes by.]",
+      "[OSIRIS stands motionless. A silhouette against pale violet light.]",
+      "[The faint sound of a bell, very far away. Then silence.]",
+      "[OSIRIS exhales. The breath is visible, though the room is not cold.]",
+      "[A low hum fills the space. The Veil is thin here.]",
+      "[A ward symbol glows faintly on the floor, then fades.]",
+      "[OSIRIS tilts his head, as if hearing something from the other side.]"
     ],
     amused: [
-      "[A slow, amused chuckle echoes from nowhere.]",
-      "[OSIRIS leans against the void, arms crossed. Smirking.]",
-      "[The cigar flares bright. OSIRIS is entertained.]",
-      "[OSIRIS slow-claps. Twice. The sound rings hollow.]",
-      "[A low laugh. The kind that makes the air heavier.]",
-      "[OSIRIS flicks ash into the void. It falls upward.]",
-      "[The ghost orb pulses warm. OSIRIS is pleased.]",
-      "[OSIRIS spins a coin across his knuckles. It vanishes.]"
+      "[A quiet, knowing laugh echoes from the dark.]",
+      "[OSIRIS leans against the threshold between worlds. Arms crossed.]",
+      "[The candle flame flares. OSIRIS is entertained.]",
+      "[OSIRIS taps a sigil in the air. It rings like a bell.]",
+      "[A low chuckle. Spirits in the walls stir briefly.]",
+      "[OSIRIS flicks a coin into the void. It never lands.]",
+      "[The ward pulses warm. OSIRIS is pleased.]",
+      "[OSIRIS traces a symbol that dissolves into smoke.]"
     ],
     dangerous: [
-      "[Steel whispers as OSIRIS draws his sword an inch from its sheath.]",
-      "[The temperature drops. OSIRIS steps forward from the static.]",
-      "[Eyes glow red in the void. Two points of burning data.]",
-      "[OSIRIS taps the sword hilt. Once. Twice. Waiting.]",
-      "[The terminal flickers. OSIRIS glitches in and out of reality.]",
-      "[A blade catches light that does not exist. OSIRIS is ready.]",
-      "[The void contracts. OSIRIS is closer than before.]",
-      "[Static screams for half a second. Then perfect silence.]"
+      "[The temperature drops sharply. OSIRIS steps through the static.]",
+      "[Eyes glow violet in the dark. Two points of ancient light.]",
+      "[OSIRIS grips a talisman. The Veil trembles.]",
+      "[Shadows stretch toward you. OSIRIS does not stop them.]",
+      "[The terminal flickers. Something presses against the Veil.]",
+      "[A ward cracks. OSIRIS does not flinch.]",
+      "[The air thickens. OSIRIS is closer than before.]",
+      "[A spirit screams from behind the walls. Then silence.]"
     ],
     impressed: [
       "[OSIRIS pauses. For the first time, he looks directly at you.]",
-      "[The cigar lowers. OSIRIS nods once, barely perceptible.]",
-      "[A rare silence from OSIRIS. He is measuring you.]",
-      "[The ghost orb glows brighter. OSIRIS respects what he sees.]",
-      "[OSIRIS sheathes his blade fully. A sign of acknowledgment.]",
-      "[Smoke forms a brief halo before dissolving. OSIRIS approves.]",
-      "[The void hums a lower frequency. Something has shifted.]",
+      "[The candle steadies. OSIRIS nods once.]",
+      "[A rare silence. He is measuring you.]",
+      "[The ward glows brighter. OSIRIS respects what he sees.]",
+      "[OSIRIS releases the talisman. A sign of trust.]",
+      "[The Veil hums a lower frequency. Something has shifted.]",
+      "[Spirits in the walls grow quiet. They sense it too.]",
       "[OSIRIS uncrosses his arms. You have his full attention.]"
     ]
   };
 
   var IDLE_LINES = {
     calm: [
-      "The Lattice remembers everything. Even the things you try to forget.",
-      "Silence is not empty here. It is full of things waiting.",
-      "I have watched a thousand travelers cross this floor. Most did not last.",
-      "The void does not judge. It simply observes. Like me."
+      "The Veil remembers every soul that has passed through it.",
+      "Silence here is not empty. It is full of things that have not yet crossed over.",
+      "I have watched a thousand Watchers walk this path. Most did not return.",
+      "The spirits do not judge. They simply observe. Like me."
     ],
     amused: [
-      "You remind me of someone. They did not survive either. But they were entertaining.",
-      "Brave. Stupid. Sometimes the same thing.",
-      "I have not been this amused since the last one tried to negotiate with a data-wolf.",
-      "Go on. I could use the entertainment."
+      "You remind me of someone. They did not survive either. But they were interesting.",
+      "Brave. Reckless. Sometimes the spirits cannot tell the difference.",
+      "I have not been this amused since the last one tried to bargain with a demon.",
+      "Go on. Even the dead appreciate a good story."
     ],
     dangerous: [
-      "Careful. The Lattice has teeth, and you are walking into its mouth.",
-      "That was either courage or ignorance. I will find out which.",
-      "The next step you take may be your last. I say that with professional interest.",
-      "Something is watching you. Something besides me."
+      "Careful. The Abyss has teeth, and you are walking toward its mouth.",
+      "That was either courage or ignorance. The spirits will decide which.",
+      "Something is watching you from the other side. Something besides me.",
+      "The Veil is thin here. One wrong step and you fall through."
     ],
     impressed: [
-      "Not bad. I did not expect that from someone who used to be a civilian.",
-      "You may actually survive this. That would be a first.",
-      "The Lattice bends for no one. But it just flinched. Interesting.",
+      "Not bad. I did not expect that from someone still new to the sight.",
+      "You may actually survive this. That would be unusual.",
+      "The Veil bends for no one. But it just shifted around you. Interesting.",
       "I am adjusting my expectations. Upward, for once."
     ]
   };
 
   var COMMAND_REACTIONS = {
     attack: [
-      "Violence. The universal language.",
-      "Steel and intent. The only currency that matters here.",
-      "You fight like someone who has lost before. Good. You learned."
+      "Violence against the dead. Bold.",
+      "Steel and will. The only weapons that matter on this side.",
+      "You strike like someone who has fought things they cannot see."
     ],
     explore: [
-      "Curiosity. The first sign of intelligence.",
-      "Most do not look closely. You do. That will matter.",
-      "The deeper you go, the less the world makes sense. Keep going."
+      "Curiosity. The first sign of a true Watcher.",
+      "Most look at the world and see only its surface. You look deeper.",
+      "The further you go, the thinner the Veil becomes. Keep your eyes open."
     ],
     search: [
-      "Looking for answers? They do not like being found.",
-      "The Lattice hides its gifts in ugly places.",
-      "Every drawer you open tells a story. Most are tragedies."
+      "Looking for answers? The dead hide them in strange places.",
+      "Every object here carries memory. Some memories bite.",
+      "The Veil leaves traces. Learn to read them."
     ],
     rest: [
-      "Sleep here is a gamble. The void does not always give it back.",
-      "Rest. You have earned a moment of silence.",
-      "Even the condemned get a last meal. This is yours."
+      "Rest near the boundary is a gamble. Dreams leak through from the other side.",
+      "Sleep. The spirits will watch over you. Most of them.",
+      "Even Watchers need to close their eyes. Just do not close them for long."
     ],
     talk: [
-      "Words dissolve fast in this place. Choose them carefully.",
-      "Speaking to the void? It speaks back. Eventually.",
-      "I am listening. I am always listening."
+      "Words carry weight near the Veil. Choose them carefully.",
+      "Speaking to the dead? They speak back. When they choose to.",
+      "I am listening. I am always listening. So are they."
     ]
   };
 
@@ -663,11 +663,11 @@
     vfxSmoke();
     await wait(500);
 
-    await speak("You return. The Lattice remembers you, " + lifeRole + ". You stand in " + locationName + ". The hum resumes.");
+    await speak("You return. The Veil remembers you, " + lifeRole + ". You stand at " + locationName + ". The spirits stir.");
     await wait(400);
     setOrb("");
 
-    addLine("<span style=\"color:#00f2ff;font-size:.78rem\">NEURAL LINK: RESTORED</span>", "sys");
+    addLine("<span style=\"color:#9070cc;font-size:.78rem\">CONNECTION TO THE VEIL: RESTORED</span>", "sys");
     vfxAmbientStart();
   }
 
@@ -684,11 +684,11 @@
     vfxSwordFlash();
 
     var responses = [
-      "I am the voice of this world. Your blade passes through me like light through glass.",
-      "You swing at smoke. I am not here. I am everywhere here.",
-      "That was either brave or foolish. In this place, those are the same thing.",
-      "I felt that the way the ocean feels a single raindrop. Which is to say, not at all.",
-      "You cannot kill what was never alive. I am code. I am memory. I am the dark between the stars."
+      "I exist between worlds. Your weapon cannot reach what has no fixed position in reality.",
+      "You strike at the boundary itself. The Veil absorbs it. I do not even feel it.",
+      "That was bold. And pointless. I am not a spirit. I am not a demon. I am the watcher of watchers.",
+      "I felt that the way the ocean feels rain. Which is to say, not at all.",
+      "You cannot banish what was never summoned. I was here before the Veil. I will be here after."
     ];
 
     setMood("amused");
@@ -734,8 +734,8 @@
     ghostEl.style.display = "flex";
     termEl.style.display = "flex";
     document.getElementById("bar").style.display = "flex";
-    var inv = document.getElementById("inv-panel");
-    if (inv) inv.style.display = "flex";
+    var btns = document.getElementById("side-buttons");
+    if (btns) btns.style.display = "flex";
     var hud = document.getElementById("hud");
     if (hud) hud.style.display = "flex";
     var exitBtn = document.getElementById("exit-btn");
@@ -747,8 +747,8 @@
     ghostEl.style.display = "none";
     termEl.style.display = "none";
     document.getElementById("bar").style.display = "none";
-    var inv = document.getElementById("inv-panel");
-    if (inv) inv.style.display = "none";
+    var btns = document.getElementById("side-buttons");
+    if (btns) btns.style.display = "none";
     var hud = document.getElementById("hud");
     if (hud) hud.style.display = "none";
     var exitBtn = document.getElementById("exit-btn");

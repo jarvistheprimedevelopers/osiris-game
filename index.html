@@ -5,274 +5,319 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OSIRIS | Terminal</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Special+Elite&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=Orbitron:wght@500;700&display=swap');
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 
-  /* ═══ BODY — dark film-noir base ═══ */
+  /* ═══ ROOT VARIABLES — swappable theme ═══ */
+  :root{
+    --bg:#050510;
+    --accent:#00f2ff;
+    --accent2:#ff00ff;
+    --text:#d0d0e0;
+    --muted:#333;
+    --panel:rgba(0,0,0,.75);
+    --scanline:rgba(0,242,255,.02);
+    /* 80s palette (activated by .era-80s on body) */
+    --bg80:#0a0806;
+    --accent80:#e8a832;
+    --accent280:#cc4433;
+    --text80:#d4cec4;
+    --muted80:#3d3428;
+  }
+
   body{
-    background:#0a0806;color:#d4cec4;
+    background:var(--bg);color:var(--text);
     font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
     height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
     -webkit-font-smoothing:antialiased;
-    position:relative;
+    transition:background 2s ease,color 2s ease;
   }
 
-  /* ═══ FILM GRAIN OVERLAY ═══ */
-  body::before{
-    content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-index:1;
-    pointer-events:none;
-    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
-    background-repeat:repeat;
-    opacity:.45;
+  /* ═══ ERA SHIFT — 80s mode ═══ */
+  body.era-80s{background:var(--bg80);color:var(--text80)}
+  body.era-80s .tag{color:var(--accent80)}
+  body.era-80s #loc{color:var(--accent80)}
+  body.era-80s #inp{caret-color:var(--accent80)}
+  body.era-80s .typcur{background:var(--accent80)}
+  body.era-80s #ghost{
+    background:radial-gradient(circle,#e8a832,#b8741a 50%,#4a2d08 100%)!important;
+    box-shadow:0 0 30px rgba(232,168,50,.35)!important;
   }
+  body.era-80s #energy-fill{background:linear-gradient(90deg,var(--accent80),var(--accent280))!important}
+  body.era-80s #bar{border-top-color:#1e1a14}
+  body.era-80s .choice-btn:hover{border-color:var(--accent80);color:var(--accent80)}
+  body.era-80s .hint{color:var(--muted80)}
+  body.era-80s .sys{color:var(--muted80)}
+  body.era-80s .door:hover{border-color:var(--accent80);box-shadow:0 0 25px rgba(232,168,50,.12)}
+  body.era-80s .menu-title{color:var(--accent80);-webkit-text-fill-color:var(--accent80);background:none}
 
-  /* ═══ CRT SCANLINES ═══ */
+  /* scanlines */
   body::after{
     content:'';position:fixed;top:0;left:0;width:100%;height:100%;z-index:2;
     pointer-events:none;
-    background:repeating-linear-gradient(
-      to bottom,
-      transparent 0px,
-      transparent 2px,
-      rgba(0,0,0,.12) 2px,
-      rgba(0,0,0,.12) 4px
-    );
+    background:repeating-linear-gradient(to bottom,transparent 0px,transparent 2px,var(--scanline) 2px,var(--scanline) 4px);
+  }
+  body.era-80s::after{
+    background:repeating-linear-gradient(to bottom,transparent 0px,transparent 2px,rgba(232,168,50,.015) 2px,rgba(232,168,50,.015) 4px);
   }
 
-  /* Everything must sit above the overlays */
-  #menu-screen,#ghost,#terminal,#bar,#credits-overlay{position:relative;z-index:10}
-  #ghost{position:fixed;z-index:100}
-
-  /* ═══ GHOST ORB — warm amber flicker ═══ */
+  /* ═══ GHOST ORB ═══ */
   #ghost{
-    top:14%;right:9%;width:80px;height:80px;
+    position:fixed;top:14%;right:9%;width:90px;height:90px;
     border-radius:50%;display:flex;justify-content:center;align-items:center;
-    cursor:default;
-    background:radial-gradient(circle,#e8a832 0%,#b8741a 50%,#4a2d08 100%);
-    box-shadow:0 0 30px rgba(232,168,50,.3),0 0 60px rgba(184,116,26,.1);
-    animation:bulbFlicker 4s ease-in-out infinite;
-    transition:top .5s cubic-bezier(.175,.885,.32,1.275);
+    z-index:100;cursor:default;
+    background:linear-gradient(45deg,var(--accent),var(--accent2));
+    box-shadow:0 0 40px rgba(0,242,255,.35),0 0 80px rgba(255,0,255,.12);
+    animation:orbFloat 4s ease-in-out infinite;
+    transition:top .5s cubic-bezier(.175,.885,.32,1.275),background 2s ease,box-shadow 2s ease;
     display:none;
   }
-  .eye{width:6px;height:6px;background:#fff3d4;border-radius:50%;margin:4px;box-shadow:0 0 8px #fff3d4;opacity:.7}
-
-  @keyframes bulbFlicker{
-    0%,100%{opacity:.75;transform:scale(1)}
-    10%{opacity:.65;transform:scale(.98)}
-    20%{opacity:.8;transform:scale(1.01)}
-    50%{opacity:.7;transform:scale(.99)}
-    70%{opacity:.85;transform:scale(1.02)}
-    90%{opacity:.6;transform:scale(.97)}
-  }
+  .eye{width:8px;height:8px;background:#fff;border-radius:50%;margin:4px;box-shadow:0 0 10px #fff}
+  @keyframes orbFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-25px) rotate(4deg)}}
 
   #ghost.thinking{
-    box-shadow:0 0 40px rgba(232,168,50,.45),0 0 90px rgba(184,116,26,.2);
-    animation:bulbFlicker 4s ease-in-out infinite,bulbPulse 1.2s ease-in-out infinite;
+    box-shadow:0 0 55px rgba(0,242,255,.55),0 0 110px rgba(255,0,255,.2);
+    animation:orbFloat 4s ease-in-out infinite,orbPulse 1.1s ease-in-out infinite;
   }
-  @keyframes bulbPulse{
-    0%,100%{opacity:.7;transform:scale(1)}
-    50%{opacity:.95;transform:scale(1.08)}
-  }
+  @keyframes orbPulse{0%,100%{transform:scale(1)}50%{transform:translateY(-25px) scale(1.1)}}
 
   #ghost.combat{
-    background:radial-gradient(circle,#ff4422 0%,#aa1100 50%,#440000 100%)!important;
-    box-shadow:0 0 40px rgba(255,68,34,.5)!important;
-    animation:bulbFlicker 4s ease-in-out infinite,combatFlash .15s ease-in-out 4!important;
+    background:linear-gradient(45deg,#ff0044,#ff6600)!important;
+    box-shadow:0 0 50px rgba(255,0,68,.55)!important;
+    animation:orbGlitch .12s ease-in-out 5,orbFloat 4s ease-in-out infinite!important;
   }
-  @keyframes combatFlash{
-    0%{transform:translate(0) scale(1)}25%{transform:translate(5px,-4px) scale(1.06)}
-    50%{transform:translate(-6px,3px) scale(.95)}100%{transform:translate(0) scale(1)}
+  @keyframes orbGlitch{
+    0%{transform:translate(0) scale(1)}25%{transform:translate(7px,-5px) scale(1.07)}
+    50%{transform:translate(-8px,4px) scale(.94)}75%{transform:translate(4px,6px) scale(1.05)}100%{transform:translate(0) scale(1)}
   }
 
   #ghost.explore{
-    background:radial-gradient(circle,#d4a840 0%,#8a6a20 50%,#3a2a08 100%)!important;
-    box-shadow:0 0 35px rgba(212,168,64,.3),0 0 70px rgba(138,106,32,.1)!important;
-    animation:bulbFlicker 5.5s ease-in-out infinite!important;
+    background:linear-gradient(45deg,#00ffa3,#00b4ff)!important;
+    box-shadow:0 0 45px rgba(0,255,163,.3)!important;
+    animation:orbFloat 5s ease-in-out infinite!important;
   }
 
   #ghost.deflect{
-    background:radial-gradient(circle,#fff8e0 0%,#e8d090 50%,#8a7040 100%)!important;
-    box-shadow:0 0 70px rgba(255,248,224,.5)!important;
-    animation:deflectBurst .3s ease-in-out 3!important;
+    background:#fff!important;box-shadow:0 0 80px rgba(255,255,255,.6)!important;
+    animation:orbDeflect .25s ease-in-out 3!important;
   }
-  @keyframes deflectBurst{0%,100%{transform:scale(1)}50%{transform:scale(1.25) rotate(5deg)}}
+  @keyframes orbDeflect{0%,100%{transform:scale(1)}50%{transform:scale(1.25) rotate(6deg)}}
+
+  /* ═══ SHIFT FLASH — the isekai crack ═══ */
+  #shift-flash{
+    position:fixed;top:0;left:0;width:100%;height:100%;z-index:999;
+    background:#fff;opacity:0;pointer-events:none;
+    transition:opacity .15s ease;
+  }
+  #shift-flash.fire{opacity:1}
+
+  /* ═══ ENERGY BAR ═══ */
+  #energy-bar{
+    position:fixed;top:0;left:0;width:100%;height:4px;z-index:150;
+    background:rgba(255,255,255,.05);display:none;
+  }
+  #energy-fill{
+    height:100%;width:100%;
+    background:linear-gradient(90deg,#00ff88,#00f2ff);
+    transition:width .5s ease;
+    box-shadow:0 0 8px rgba(0,255,136,.3);
+  }
+
+  /* ═══ ITEM BAR ═══ */
+  #item-bar{
+    position:fixed;top:50%;right:12px;transform:translateY(-50%);z-index:150;
+    display:none;flex-direction:column;gap:6px;
+  }
+  .item-slot{
+    width:48px;height:48px;
+    border:1px solid #1a1a2e;
+    background:rgba(10,10,20,.7);
+    border-radius:4px;
+    display:flex;justify-content:center;align-items:center;
+    font-size:.65rem;color:#444;text-align:center;
+    line-height:1.1;padding:2px;
+    transition:border-color .3s ease,box-shadow .3s ease;
+    user-select:none;
+  }
+  .item-slot.filled{border-color:var(--accent);color:var(--accent);box-shadow:0 0 10px rgba(0,242,255,.1)}
+  body.era-80s .item-slot.filled{border-color:var(--accent80);color:var(--accent80);box-shadow:0 0 10px rgba(232,168,50,.1)}
 
   /* ═══ MAIN MENU ═══ */
   #menu-screen{
     position:fixed;top:0;left:0;width:100%;height:100%;z-index:200;
-    background:#0a0806;
+    background:var(--bg);
     display:flex;flex-direction:column;justify-content:center;align-items:center;
     transition:opacity .8s ease;
   }
   #menu-screen.hidden{opacity:0;pointer-events:none}
 
   .menu-title{
-    font-family:'Special Elite','Courier New',monospace;
-    font-size:4rem;font-weight:400;letter-spacing:10px;
-    color:#e8a832;
-    text-shadow:0 0 30px rgba(232,168,50,.3),0 0 60px rgba(232,168,50,.1);
+    font-family:'Orbitron',sans-serif;
+    font-size:3.5rem;font-weight:700;letter-spacing:10px;
+    background:linear-gradient(90deg,var(--accent),var(--accent2));
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+    background-clip:text;
     margin-bottom:8px;user-select:none;
-    animation:titleFlicker 5s ease-in-out infinite;
+    animation:menuGlow 3s ease-in-out infinite;
   }
-  @keyframes titleFlicker{
-    0%,100%{opacity:.9}15%{opacity:.7}30%{opacity:.95}
-    45%{opacity:.6}60%{opacity:.85}80%{opacity:.75}
-  }
+  @keyframes menuGlow{0%,100%{filter:brightness(1)}50%{filter:brightness(1.15)}}
 
-  .menu-subtitle{
-    color:#3d3428;font-size:.8rem;letter-spacing:6px;margin-bottom:55px;
-    user-select:none;font-family:'Special Elite','Courier New',monospace;
-  }
+  .menu-subtitle{color:#2a2a40;font-size:.78rem;letter-spacing:6px;margin-bottom:55px;user-select:none}
 
   .menu-doors{display:flex;gap:28px;flex-wrap:wrap;justify-content:center}
 
   .door{
-    width:175px;height:235px;
-    border:1px solid #1e1a14;
-    background:linear-gradient(180deg,#0e0c08 0%,#141008 100%);
-    border-radius:4px;
+    width:170px;height:230px;
+    border:1px solid #151525;
+    background:linear-gradient(180deg,#08081a 0%,#0e0e20 100%);
+    border-radius:6px;
     display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
-    padding-bottom:26px;cursor:pointer;position:relative;overflow:hidden;
+    padding-bottom:24px;cursor:pointer;position:relative;overflow:hidden;
     transition:all .35s ease;
   }
   .door:hover{
-    border-color:#c4922a;
-    box-shadow:0 0 25px rgba(196,146,42,.12),0 0 50px rgba(196,146,42,.04);
+    border-color:var(--accent);
+    box-shadow:0 0 25px rgba(0,242,255,.1),0 0 50px rgba(0,242,255,.03);
     transform:translateY(-3px);
   }
   .door:active{transform:translateY(0)}
 
   .door-glow{
-    position:absolute;top:32%;left:50%;transform:translate(-50%,-50%);
+    position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);
     width:45px;height:45px;border-radius:50%;
     filter:blur(22px);opacity:.2;transition:opacity .35s ease;
   }
-  .door:hover .door-glow{opacity:.45}
+  .door:hover .door-glow{opacity:.5}
 
   .door-label{
-    font-size:.78rem;font-weight:600;letter-spacing:3px;color:#4a4030;
+    font-size:.78rem;font-weight:600;letter-spacing:3px;color:#444;
     transition:color .35s ease;position:relative;z-index:1;
-    font-family:'Special Elite','Courier New',monospace;
   }
-  .door:hover .door-label{color:#d4cec4}
+  .door:hover .door-label{color:#ccc}
 
   .door-num{
-    font-family:'Special Elite','Courier New',monospace;
-    font-size:2.2rem;color:#1a1610;margin-bottom:12px;
+    font-family:'Orbitron',sans-serif;
+    font-size:2rem;color:#111;margin-bottom:12px;
     transition:color .35s ease;position:relative;z-index:1;
   }
-  .door:hover .door-num{color:#2a2418}
+  .door:hover .door-num{color:#222}
 
   .door.disabled{opacity:.2;cursor:not-allowed}
-  .door.disabled:hover{border-color:#1e1a14;box-shadow:none;transform:none}
+  .door.disabled:hover{border-color:#151525;box-shadow:none;transform:none}
 
-  .door-new .door-glow{background:#e8a832}
-  .door-continue .door-glow{background:#c4922a}
-  .door-credits .door-glow{background:#8a6a20}
+  .door-new .door-glow{background:var(--accent)}
+  .door-continue .door-glow{background:#ff9900}
+  .door-credits .door-glow{background:var(--accent2)}
 
-  /* ═══ CREDITS OVERLAY ═══ */
+  /* ═══ CREDITS ═══ */
   #credits-overlay{
     position:fixed;top:0;left:0;width:100%;height:100%;z-index:250;
-    background:rgba(10,8,6,.96);display:none;
+    background:rgba(5,5,16,.96);display:none;
     justify-content:center;align-items:center;flex-direction:column;
   }
   #credits-overlay.show{display:flex}
-  .credits-text{
-    color:#4a4030;font-size:.95rem;line-height:2.2;text-align:center;letter-spacing:2px;
-    font-family:'Special Elite','Courier New',monospace;
-  }
-  .credits-text span{color:#e8a832}
-  .credits-close{
-    margin-top:40px;color:#3d3428;font-size:.72rem;letter-spacing:4px;cursor:pointer;
-    transition:color .3s;font-family:'Special Elite','Courier New',monospace;
-  }
-  .credits-close:hover{color:#d4cec4}
+  .credits-text{color:#444;font-size:.95rem;line-height:2.2;text-align:center;letter-spacing:2px}
+  .credits-text span{color:var(--accent)}
+  .credits-close{margin-top:40px;color:#333;font-size:.72rem;letter-spacing:4px;cursor:pointer;transition:color .3s}
+  .credits-close:hover{color:#fff}
 
   /* ═══ TERMINAL ═══ */
   #terminal{
     flex:1;overflow-y:auto;padding:55px 15% 20px;
-    display:flex;flex-direction:column;gap:18px;scrollbar-width:none;
-    display:none;
+    display:none;flex-direction:column;gap:18px;scrollbar-width:none;
   }
   #terminal::-webkit-scrollbar{display:none}
 
-  .line{font-size:1.15rem;line-height:1.75;max-width:860px;animation:fadeUp .4s ease-out forwards;opacity:0;color:#b8b0a0}
+  .line{font-size:1.15rem;line-height:1.75;max-width:860px;animation:fadeUp .4s ease-out forwards;opacity:0}
   @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-  .usr{color:#5a5040;font-style:italic}
-  .sys{color:#3d3428;font-size:.9rem;letter-spacing:.05em}
-  .err{color:#cc4433;font-size:.9rem}
-  .tag{color:#e8a832;font-weight:600}
-  .action{color:#c4922a;font-weight:500}
-  .dmg{color:#cc4433}
-  .hint{font-size:.8rem;color:#2e2820;margin-top:3px}
+  .usr{color:#555;font-style:italic}
+  .sys{color:#333;font-size:.9rem;letter-spacing:.05em}
+  .err{color:#ff3355;font-size:.9rem}
+  .tag{color:var(--accent);font-weight:600}
+  .action{color:#ff9900;font-weight:500}
+  .dmg{color:#ff3355}
+  .hint{font-size:.8rem;color:#2a2a2a;margin-top:3px}
+  .stage-announce{color:var(--accent);font-weight:700;font-size:1rem;letter-spacing:2px}
 
-  /* ═══ CHOICE BUTTONS ═══ */
-  .choice-row{display:flex;gap:12px;margin-top:6px;flex-wrap:wrap}
+  .choice-row{display:flex;gap:10px;margin-top:6px;flex-wrap:wrap}
   .choice-btn{
-    background:transparent;border:1px solid #2a2418;color:#5a5040;
-    padding:8px 22px;border-radius:3px;font-family:inherit;font-size:.88rem;
+    background:transparent;border:1px solid #222;color:#555;
+    padding:8px 20px;border-radius:4px;font-family:inherit;font-size:.85rem;
     cursor:pointer;letter-spacing:1px;transition:all .25s ease;
   }
-  .choice-btn:hover{border-color:#e8a832;color:#e8a832;box-shadow:0 0 12px rgba(232,168,50,.08)}
-  .choice-btn:active{background:rgba(232,168,50,.04)}
+  .choice-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:0 0 12px rgba(0,242,255,.08)}
 
   .dots{display:inline-flex;gap:5px;align-items:center}
-  .dots i{width:4px;height:4px;background:rgba(232,168,50,.4);border-radius:50%;animation:dotAnim 1.4s ease-in-out infinite;display:block}
+  .dots i{width:4px;height:4px;background:rgba(0,242,255,.4);border-radius:50%;animation:dotAnim 1.4s ease-in-out infinite;display:block}
   .dots i:nth-child(2){animation-delay:.2s}.dots i:nth-child(3){animation-delay:.4s}
   @keyframes dotAnim{0%,60%,100%{opacity:.3;transform:scale(.8)}30%{opacity:1;transform:scale(1.3)}}
 
-  .typcur{display:inline-block;width:2px;height:1.1em;background:#e8a832;margin-left:2px;vertical-align:text-bottom;animation:curBlink .7s step-end infinite}
+  .typcur{display:inline-block;width:2px;height:1.1em;background:var(--accent);margin-left:2px;vertical-align:text-bottom;animation:curBlink .7s step-end infinite}
   @keyframes curBlink{0%,100%{opacity:1}50%{opacity:0}}
 
   /* ═══ BOTTOM BAR ═══ */
   #bar{
-    height:90px;background:rgba(10,8,6,.94);border-top:1px solid #1e1a14;
-    display:flex;align-items:center;padding:0 15%;flex-shrink:0;
-    display:none;
+    height:90px;background:rgba(0,0,0,.9);border-top:1px solid #1a1a2e;
+    display:none;align-items:center;padding:0 15%;flex-shrink:0;
   }
   #loc{
-    color:#e8a832;font-weight:800;letter-spacing:3px;margin-right:35px;font-size:.82rem;
-    white-space:nowrap;user-select:none;
-    font-family:'Special Elite','Courier New',monospace;
+    color:var(--accent);font-weight:800;letter-spacing:3px;margin-right:35px;font-size:.8rem;
+    white-space:nowrap;user-select:none;font-family:'Orbitron',sans-serif;
   }
-  #inp{background:0;border:0;color:#d4cec4;font-size:1.15rem;flex:1;outline:0;font-family:inherit;font-weight:300;caret-color:#e8a832}
-  #inp::placeholder{color:#2a2418}
+  #inp{background:0;border:0;color:var(--text);font-size:1.1rem;flex:1;outline:0;font-family:inherit;font-weight:300;caret-color:var(--accent)}
+  #inp::placeholder{color:#222}
   #inp:disabled{opacity:.3}
 
   /* ═══ RESPONSIVE ═══ */
   @media(max-width:768px){
-    .menu-title{font-size:2.2rem;letter-spacing:5px}
-    .menu-subtitle{font-size:.6rem;letter-spacing:3px;margin-bottom:35px}
-    .door{width:135px;height:185px;padding-bottom:18px}
-    .door-num{font-size:1.8rem;margin-bottom:10px}
+    .menu-title{font-size:2rem;letter-spacing:5px}
+    .menu-subtitle{font-size:.6rem;margin-bottom:35px}
+    .door{width:130px;height:180px;padding-bottom:18px}
+    .door-num{font-size:1.6rem}
     .door-label{font-size:.65rem;letter-spacing:2px}
-    .menu-doors{gap:14px}
-    #terminal{padding:30px 6% 12px}
-    #bar{padding:0 6%;height:70px}
-    #loc{letter-spacing:2px;font-size:.65rem;margin-right:12px}
+    .menu-doors{gap:12px}
+    #terminal{padding:30px 5% 12px}
+    #bar{padding:0 5%;height:70px}
+    #loc{letter-spacing:2px;font-size:.62rem;margin-right:10px}
     #inp{font-size:.95rem}
     .line{font-size:.98rem}
     #ghost{width:55px;height:55px;top:5%;right:4%}
-    .eye{width:5px;height:5px;margin:3px}
+    .eye{width:6px;height:6px;margin:3px}
+    #item-bar{right:4px}
+    .item-slot{width:38px;height:38px;font-size:.55rem}
   }
   @media(max-width:400px){
-    .menu-title{font-size:1.7rem;letter-spacing:3px}
-    .door{width:110px;height:155px}
-    .door-num{font-size:1.4rem}
-    #terminal{padding:22px 5% 10px}
-    #bar{padding:0 5%;height:62px}
-    #loc{font-size:.58rem;letter-spacing:1.5px;margin-right:8px}
-    .line{font-size:.92rem}
+    .menu-title{font-size:1.6rem;letter-spacing:3px}
+    .door{width:105px;height:150px}
+    .door-num{font-size:1.3rem}
+    #terminal{padding:22px 4% 10px}
+    #bar{padding:0 4%;height:62px}
+    #loc{font-size:.55rem;margin-right:8px}
+    .line{font-size:.9rem}
   }
 </style>
 </head>
 <body>
 
+<!-- ═══ SHIFT FLASH (white flash for the isekai crack) ═══ -->
+<div id="shift-flash"></div>
+
+<!-- ═══ ENERGY BAR ═══ -->
+<div id="energy-bar"><div id="energy-fill"></div></div>
+
+<!-- ═══ ITEM BAR ═══ -->
+<div id="item-bar">
+  <div class="item-slot" id="slot0">—</div>
+  <div class="item-slot" id="slot1">—</div>
+  <div class="item-slot" id="slot2">—</div>
+  <div class="item-slot" id="slot3">—</div>
+</div>
+
 <!-- ═══ MAIN MENU ═══ -->
 <div id="menu-screen">
   <div class="menu-title">OSIRIS</div>
-  <div class="menu-subtitle">AMERICA, 1986</div>
+  <div class="menu-subtitle">SYSTEM LINK ACTIVE</div>
   <div class="menu-doors">
     <div class="door door-new" onclick="doorNewPlayer()">
       <div class="door-glow"></div>
@@ -296,10 +341,11 @@
 <div id="credits-overlay">
   <div class="credits-text">
     <span>OSIRIS</span><br>
-    America, 1986<br><br>
+    An Isekai Terminal RPG<br><br>
     Created by [Your Name]<br>
-    Narrated by OSIRIS<br><br>
-    <span>The silence remembers.</span>
+    Narrated by OSIRIS<br>
+    The Host is watching.<br><br>
+    <span>2025</span>
   </div>
   <div class="credits-close" onclick="closeCredits()">[ RETURN ]</div>
 </div>
@@ -318,36 +364,31 @@
 
 <script>
 // ════════════════════════════════════════════════════════════════
-//  OSIRIS — 1980s Gritty America
+//  OSIRIS — Anime Isekai RPG with Tutorial + Era Shift
 // ════════════════════════════════════════════════════════════════
 
-var termEl   = document.getElementById('terminal');
-var inpEl    = document.getElementById('inp');
-var ghostEl  = document.getElementById('ghost');
-var locEl    = document.getElementById('loc');
-var menuEl   = document.getElementById('menu-screen');
-var contDoor = document.getElementById('door-continue');
-var creditsEl= document.getElementById('credits-overlay');
+// ─── DOM ─────────────────────────────────────────────────────
+var termEl    = document.getElementById('terminal');
+var inpEl     = document.getElementById('inp');
+var ghostEl   = document.getElementById('ghost');
+var locEl     = document.getElementById('loc');
+var menuEl    = document.getElementById('menu-screen');
+var contDoor  = document.getElementById('door-continue');
+var creditsEl = document.getElementById('credits-overlay');
+var energyBar = document.getElementById('energy-bar');
+var energyFill= document.getElementById('energy-fill');
+var itemBar   = document.getElementById('item-bar');
+var flashEl   = document.getElementById('shift-flash');
 
 var locked = false;
 
 // ─── GAME STATE ──────────────────────────────────────────────
 var gameState = {
-  character: {
-    sex: '',
-    age: '',
-    lifeRole: '',    // nurse, plumber, mechanic, etc.
-    level: 1,
-    xp: 0
-    // NO HP — OSIRIS has no health, no mana, no combat stats.
-    // The player is a person in a gritty world, not an RPG warrior.
-  },
-  world: {
-    location: 'UNKNOWN',
-    city: '',        // NEW YORK, CLEVELAND, or CHICAGO
-    chapter: 1
-  },
-  inventory: [],
+  character: { sex:'', age:'', lifeRole:'', level:1, xp:0 },
+  stats: { energy:100, maxEnergy:100 },
+  world: { location:'UNKNOWN', chapter:1, era:'modern', tutorialStage:0 },
+  // tutorialStage: 0=not started, 1=explore workplace, 2=find system key, 3=combat tutorial, 4=shift complete
+  inventory: [],  // max 4 items for the visual bar
   quests: [],
   flags: {},
   summary: '',
@@ -356,589 +397,603 @@ var gameState = {
 
 // ─── SAVE / LOAD ─────────────────────────────────────────────
 var SAVE_KEY = 'osiris_save';
-
-function saveGame() {
-  try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(gameState));
-  } catch(e) { console.error('[OSIRIS] Save failed:', e); }
+function saveGame(){ try{ localStorage.setItem(SAVE_KEY,JSON.stringify(gameState)); }catch(e){} }
+function loadGame(){
+  try{ var r=localStorage.getItem(SAVE_KEY); if(!r) return false; var p=JSON.parse(r);
+    if(p&&p.character&&p.world){ gameState=p; return true; } return false;
+  }catch(e){ return false; }
 }
+function hasSave(){ try{ return localStorage.getItem(SAVE_KEY)!==null; }catch(e){ return false; } }
+function deleteSave(){ try{ localStorage.removeItem(SAVE_KEY); }catch(e){} }
 
-function loadGame() {
-  try {
-    var raw = localStorage.getItem(SAVE_KEY);
-    if (!raw) return false;
-    var parsed = JSON.parse(raw);
-    if (parsed && parsed.character && parsed.world) {
-      gameState = parsed;
-      return true;
-    }
-    return false;
-  } catch(e) { return false; }
-}
-
-function hasSave() {
-  try { return localStorage.getItem(SAVE_KEY) !== null; }
-  catch(e) { return false; }
-}
-
-function deleteSave() {
-  try { localStorage.removeItem(SAVE_KEY); } catch(e) {}
-}
-
-if (!hasSave()) contDoor.classList.add('disabled');
+if(!hasSave()) contDoor.classList.add('disabled');
 
 // ─── MENU ────────────────────────────────────────────────────
-function hideMenu() {
-  menuEl.classList.add('hidden');
-  setTimeout(function() { menuEl.style.display = 'none'; }, 800);
+function hideMenu(){ menuEl.classList.add('hidden'); setTimeout(function(){ menuEl.style.display='none'; },800); }
+function showGame(){
+  ghostEl.style.display='flex';
+  termEl.style.display='flex';
+  document.getElementById('bar').style.display='flex';
+  energyBar.style.display='block';
+  itemBar.style.display='flex';
 }
-
-function showGame() {
-  ghostEl.style.display = 'flex';
-  termEl.style.display = 'flex';
-  document.getElementById('bar').style.display = 'flex';
-}
-
-function doorCredits() { creditsEl.classList.add('show'); }
-function closeCredits() { creditsEl.classList.remove('show'); }
-
-function doorContinue() {
-  if (!hasSave()) return;
-  if (!loadGame()) return;
-  hideMenu();
-  showGame();
+function doorCredits(){ creditsEl.classList.add('show'); }
+function closeCredits(){ creditsEl.classList.remove('show'); }
+function doorContinue(){
+  if(!hasSave()) return;
+  if(!loadGame()) return;
+  hideMenu(); showGame();
   setLoc(gameState.world.location);
-  setTimeout(function() { bootContinue(); }, 900);
+  updateEnergy(); renderInventory();
+  if(gameState.world.era==='80s') document.body.classList.add('era-80s');
+  setTimeout(function(){ bootContinue(); },900);
+}
+function doorNewPlayer(){
+  deleteSave(); hideMenu(); showGame();
+  setTimeout(function(){ beginCharacterCreation(); },900);
 }
 
-function doorNewPlayer() {
-  deleteSave();
-  hideMenu();
-  showGame();
-  setTimeout(function() { beginCharacterCreation(); }, 900);
+// ─── ENERGY ──────────────────────────────────────────────────
+function updateEnergy(){
+  var pct = Math.max(0,Math.min(100,(gameState.stats.energy/gameState.stats.maxEnergy)*100));
+  energyFill.style.width = pct+'%';
+}
+function drainEnergy(amount){
+  gameState.stats.energy = Math.max(0, gameState.stats.energy - amount);
+  updateEnergy(); saveGame();
+}
+function restoreEnergy(amount){
+  gameState.stats.energy = Math.min(gameState.stats.maxEnergy, gameState.stats.energy + amount);
+  updateEnergy(); saveGame();
 }
 
-// ════════════════════════════════════════════════════════════════
-//  API CALL — compact context payload
-// ════════════════════════════════════════════════════════════════
-async function callOsiris(userInput, actionLabel, extraContext) {
-  // Build a clean, JSON-serializable payload (fixes DataCloneError)
-  var payload = JSON.parse(JSON.stringify({
-    input: String(userInput || ''),
-    location: String(gameState.world.location || 'UNKNOWN'),
-    city: String(gameState.world.city || ''),
-    action: String(actionLabel || 'GENERAL'),
-    chapter: Number(gameState.world.chapter || 1),
-    character: {
-      sex: String(gameState.character.sex || ''),
-      age: String(gameState.character.age || ''),
-      lifeRole: String(gameState.character.lifeRole || ''),
-      level: Number(gameState.character.level || 1)
-    },
-    inventory: (gameState.inventory || []).slice(0, 10).join(', '),
-    activeQuest: (gameState.quests && gameState.quests.length > 0) ? String(gameState.quests[0]) : '',
-    summary: String(gameState.summary || ''),
-    recentLog: (gameState.recentLog || []).slice(-4).map(function(m) {
-      return { role: String(m.role), text: String(m.text) };
-    }),
-    extra: extraContext ? String(extraContext) : ''
-  }));
-
-  try {
-    var res = await fetch('/api/osiris', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    var ct = res.headers.get('content-type') || '';
-    if (ct.indexOf('application/json') === -1) {
-      console.error('[OSIRIS] Non-JSON response:', res.status);
-      return { ok: false, error: 'NETWORK' };
+// ─── INVENTORY (visual item bar) ────────────────────────────
+function addItem(name){
+  if(gameState.inventory.length >= 4) return false; // bar is full
+  gameState.inventory.push(name);
+  renderInventory(); saveGame();
+  return true;
+}
+function hasItem(name){
+  return gameState.inventory.indexOf(name) !== -1;
+}
+function renderInventory(){
+  for(var i=0;i<4;i++){
+    var slot = document.getElementById('slot'+i);
+    if(gameState.inventory[i]){
+      slot.textContent = gameState.inventory[i];
+      slot.classList.add('filled');
+    } else {
+      slot.textContent = '—';
+      slot.classList.remove('filled');
     }
-
-    var data = await res.json();
-
-    if (data.ok && data.text) {
-      gameState.recentLog.push({ role: 'user', text: userInput });
-      gameState.recentLog.push({ role: 'model', text: data.text });
-      if (gameState.recentLog.length > 8) gameState.recentLog = gameState.recentLog.slice(-8);
-      saveGame();
-      return { ok: true, text: data.text };
-    }
-
-    return { ok: false, error: data.error || 'API_FAIL' };
-  } catch (e) {
-    console.error('[OSIRIS] Fetch error:', e.message);
-    return { ok: false, error: 'NETWORK' };
   }
 }
 
-// ════════════════════════════════════════════════════════════════
-//  INTENT DETECTION — 1980s actions
-// ════════════════════════════════════════════════════════════════
-function classifyAction(cmd) {
-  if (/\b(attack|hit|fight|kill|strike|punch|stab|shoot|swing)\s*(osiris|the light|the glow|the watcher|you)/i.test(cmd)) return 'ATTACK_OSIRIS';
-  if (/\b(attack|fight|hit|shoot|stab|punch|swing|throw|kick)\b/i.test(cmd)) return 'COMBAT';
-  if (/\b(search|loot|open|grab|take|pick|steal|rummage|check|dig|pry)\b/i.test(cmd)) return 'SEARCH';
-  if (/\b(look|explore|examine|inspect|wander|enter|go|walk|move|travel|head|cross|approach|leave|exit|climb|descend)\b/i.test(cmd)) return 'EXPLORE';
-  if (/\b(talk|speak|ask|call|shout|yell|whisper|listen|hello|hey)\b/i.test(cmd)) return 'TALK';
-  if (/\b(rest|sleep|sit|wait|hide|smoke|drink|eat)\b/i.test(cmd)) return 'REST';
-  if (/\b(fix|repair|patch|connect|wire|pipe|tape|rig|build|use|turn|switch|plug)\b/i.test(cmd)) return 'INTERACT';
+// ─── ERA SHIFT (the isekai crack) ────────────────────────────
+async function triggerEraShift(){
+  function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+
+  // White flash
+  flashEl.classList.add('fire');
+  await wait(200);
+  flashEl.classList.remove('fire');
+  await wait(100);
+  flashEl.classList.add('fire');
+  await wait(150);
+  flashEl.classList.remove('fire');
+  await wait(300);
+  flashEl.classList.add('fire');
+
+  // Shift body to 80s palette
+  document.body.classList.add('era-80s');
+  gameState.world.era = '80s';
+  gameState.world.location = 'TIMES_SQUARE';
+  setLoc('TIMES_SQUARE');
+
+  await wait(600);
+  flashEl.classList.remove('fire');
+
+  // Dramatic text
+  addLine('<span class="stage-announce">— DIMENSIONAL FRACTURE DETECTED —</span>');
+  await wait(500);
+  addLine('<span class="sys">Reality index: COLLAPSED. Era signature: 1985. Location: New York.</span>');
+  await wait(600);
+
+  gameState.world.tutorialStage = 4;
+  gameState.world.chapter = 1;
+  gameState.summary += ' The world cracked. Player was pulled through a dimensional fracture into 1985 Times Square, New York. Neon signs, yellow cabs frozen mid-lane, steam rising from grates. The city is empty. The silence has followed them.';
+  saveGame();
+}
+
+// ─── API CALL ────────────────────────────────────────────────
+async function callOsiris(userInput, actionLabel, extraContext){
+  var payload = JSON.parse(JSON.stringify({
+    input: String(userInput||''),
+    location: String(gameState.world.location||'UNKNOWN'),
+    era: String(gameState.world.era||'modern'),
+    action: String(actionLabel||'GENERAL'),
+    chapter: Number(gameState.world.chapter||1),
+    tutorialStage: Number(gameState.world.tutorialStage||0),
+    character: {
+      sex:String(gameState.character.sex||''),
+      age:String(gameState.character.age||''),
+      lifeRole:String(gameState.character.lifeRole||''),
+      level:Number(gameState.character.level||1)
+    },
+    stats: { energy:Number(gameState.stats.energy), maxEnergy:Number(gameState.stats.maxEnergy) },
+    inventory: (gameState.inventory||[]).join(', '),
+    activeQuest: (gameState.quests&&gameState.quests.length>0)?String(gameState.quests[0]):'',
+    summary: String(gameState.summary||''),
+    recentLog: (gameState.recentLog||[]).slice(-4).map(function(m){ return {role:String(m.role),text:String(m.text)}; }),
+    extra: extraContext ? String(extraContext) : ''
+  }));
+
+  try{
+    var res = await fetch('/api/osiris',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    var ct = res.headers.get('content-type')||'';
+    if(ct.indexOf('application/json')===-1) return {ok:false,error:'NETWORK'};
+    var data = await res.json();
+    if(data.ok && data.text){
+      gameState.recentLog.push({role:'user',text:userInput});
+      gameState.recentLog.push({role:'model',text:data.text});
+      if(gameState.recentLog.length>8) gameState.recentLog=gameState.recentLog.slice(-8);
+      saveGame();
+      return {ok:true,text:data.text};
+    }
+    return {ok:false,error:data.error||'API_FAIL'};
+  }catch(e){ return {ok:false,error:'NETWORK'}; }
+}
+
+// ─── INTENT DETECTION ────────────────────────────────────────
+function classifyAction(cmd){
+  if(/\b(attack|hit|fight|kill|strike|punch|destroy)\s*(osiris|ghost|host|orb|light|the watcher|you)/i.test(cmd)) return 'ATTACK_OSIRIS';
+  if(/\b(attack|fight|hit|slash|shoot|kill|stab|punch|kick|cast|fire|block|parry|swing)\b/i.test(cmd)) return 'COMBAT';
+  if(/\b(search|loot|open|grab|take|pick|steal|rummage|check|dig|examine|inspect)\b/i.test(cmd)) return 'SEARCH';
+  if(/\b(look|explore|wander|enter|go|walk|move|travel|head|approach|leave|exit|climb|around|venture)\b/i.test(cmd)) return 'EXPLORE';
+  if(/\b(talk|speak|ask|call|shout|yell|whisper|listen|hello|hey)\b/i.test(cmd)) return 'TALK';
+  if(/\b(rest|sleep|sit|wait|heal|meditate|drink|eat)\b/i.test(cmd)) return 'REST';
+  if(/\b(fix|repair|use|turn|switch|plug|connect|wire|hack|activate)\b/i.test(cmd)) return 'INTERACT';
   return 'GENERAL';
 }
 
-function detectLocation(cmd) {
-  if (/hospital|ward|clinic|emergency|staff\s*room/i.test(cmd)) return 'HOSPITAL';
-  if (/basement|cellar|underground|below/i.test(cmd)) return 'BASEMENT';
-  if (/street|road|block|avenue|outside|sidewalk/i.test(cmd)) return 'STREET';
-  if (/alley|alleyway|back\s*alley|dumpster/i.test(cmd)) return 'ALLEY';
-  if (/subway|metro|train|platform|tunnel/i.test(cmd)) return 'SUBWAY';
-  if (/bar|pub|tavern|lounge|dive/i.test(cmd)) return 'BAR';
-  if (/apartment|flat|room|home|building|lobby|hallway|stairs/i.test(cmd)) return 'APARTMENT';
-  if (/diner|restaurant|cafe|kitchen/i.test(cmd)) return 'DINER';
-  if (/warehouse|factory|dock|pier|harbor|port/i.test(cmd)) return 'WAREHOUSE';
-  if (/park|bridge|river|waterfront/i.test(cmd)) return 'PARK';
-  if (/shop|store|bodega|laundromat|pawn/i.test(cmd)) return 'SHOP';
-  if (/church|chapel|graveyard|cemetery/i.test(cmd)) return 'CHURCH';
-  if (/phone|payphone|booth/i.test(cmd)) return 'PAYPHONE';
-  if (/roof|rooftop|fire\s*escape/i.test(cmd)) return 'ROOFTOP';
+function detectLocation(cmd){
+  // Modern-era locations
+  if(/hospital|ward|clinic|staff\s*room/i.test(cmd)) return 'HOSPITAL';
+  if(/basement|cellar|underground/i.test(cmd)) return 'BASEMENT';
+  if(/office|cubicle|high.?rise|floor|elevator|lobby/i.test(cmd)) return 'OFFICE';
+  if(/garage|workshop|bay|car\s*lift/i.test(cmd)) return 'GARAGE';
+  if(/hall|corridor|hallway|stairwell/i.test(cmd)) return 'HALLWAY';
+  if(/roof|rooftop/i.test(cmd)) return 'ROOFTOP';
+  if(/outside|street|sidewalk|parking/i.test(cmd)) return 'STREET';
+  // 80s-era locations
+  if(/times\s*square|broadway|neon|billboard/i.test(cmd)) return 'TIMES_SQUARE';
+  if(/subway|metro|platform|tunnel/i.test(cmd)) return 'SUBWAY';
+  if(/alley|dumpster/i.test(cmd)) return 'ALLEY';
+  if(/bar|pub|dive|lounge/i.test(cmd)) return 'BAR';
+  if(/diner|restaurant|cafe|booth/i.test(cmd)) return 'DINER';
+  if(/apartment|flat|tenement/i.test(cmd)) return 'APARTMENT';
+  if(/warehouse|dock|pier/i.test(cmd)) return 'WAREHOUSE';
+  if(/shop|store|bodega|pawn/i.test(cmd)) return 'SHOP';
+  if(/phone|payphone|booth/i.test(cmd)) return 'PAYPHONE';
+  if(/park|bridge|river/i.test(cmd)) return 'PARK';
   return null;
 }
 
-// ════════════════════════════════════════════════════════════════
-//  DOM HELPERS
-// ════════════════════════════════════════════════════════════════
-function addLine(html, cls) {
-  var div = document.createElement('div');
-  div.className = 'line' + (cls ? ' ' + cls : '');
-  div.innerHTML = html;
-  termEl.appendChild(div);
-  termEl.scrollTop = termEl.scrollHeight;
-  return div;
+// ─── DOM HELPERS ─────────────────────────────────────────────
+function addLine(html,cls){
+  var d=document.createElement('div'); d.className='line'+(cls?' '+cls:'');
+  d.innerHTML=html; termEl.appendChild(d); termEl.scrollTop=termEl.scrollHeight; return d;
 }
-
-function showLoader() {
-  var div = document.createElement('div');
-  div.className = 'line'; div.id = 'ldr';
-  div.innerHTML = '<span class="tag">[OSIRIS]:</span> <span style="color:#4a4030">...</span> <span class="dots"><i></i><i></i><i></i></span>';
-  termEl.appendChild(div);
-  termEl.scrollTop = termEl.scrollHeight;
+function showLoader(){
+  var d=document.createElement('div'); d.className='line'; d.id='ldr';
+  d.innerHTML='<span class="tag">[OSIRIS]:</span> <span style="color:#444">Processing</span> <span class="dots"><i></i><i></i><i></i></span>';
+  termEl.appendChild(d); termEl.scrollTop=termEl.scrollHeight;
 }
-
-function hideLoader() {
-  var el = document.getElementById('ldr');
-  if (el) el.remove();
+function hideLoader(){ var e=document.getElementById('ldr'); if(e) e.remove(); }
+function setOrb(state,ms){
+  ghostEl.className=state||'';
+  if(ms) setTimeout(function(){ ghostEl.className=''; },ms);
 }
-
-function setOrb(state, ms) {
-  ghostEl.className = state ? state : '';
-  if (ms) setTimeout(function() { ghostEl.className = ''; }, ms);
+function setLoc(n){ gameState.world.location=n; locEl.textContent=n; }
+function strikeHost(){
+  ghostEl.style.top='calc(100% - 180px)'; setOrb('deflect');
+  setTimeout(function(){ ghostEl.style.top='14%'; ghostEl.className=''; },1200);
 }
-
-function setLoc(name) {
-  gameState.world.location = name;
-  locEl.textContent = name;
-}
-
-function strikeHost() {
-  ghostEl.style.top = 'calc(100% - 180px)';
-  setOrb('deflect');
-  setTimeout(function() {
-    ghostEl.style.top = '14%';
-    ghostEl.className = '';
-  }, 1200);
-}
-
-function typeWrite(container, text) {
-  return new Promise(function(resolve) {
-    container.innerHTML = '<span class="tag">[OSIRIS]:</span> ';
-    var span = document.createElement('span');
-    container.appendChild(span);
-    var cursor = document.createElement('span');
-    cursor.className = 'typcur';
-    container.appendChild(cursor);
-    termEl.scrollTop = termEl.scrollHeight;
-    var i = 0;
-    function next() {
-      if (i < text.length) {
-        span.textContent += text.charAt(i);
-        i++;
-        termEl.scrollTop = termEl.scrollHeight;
-        setTimeout(next, 28 + Math.random() * 20);
-      } else {
-        cursor.remove();
-        resolve();
-      }
+function typeWrite(container,text){
+  return new Promise(function(resolve){
+    container.innerHTML='<span class="tag">[OSIRIS]:</span> ';
+    var span=document.createElement('span'); container.appendChild(span);
+    var cur=document.createElement('span'); cur.className='typcur'; container.appendChild(cur);
+    termEl.scrollTop=termEl.scrollHeight;
+    var i=0;
+    function next(){
+      if(i<text.length){ span.textContent+=text.charAt(i); i++; termEl.scrollTop=termEl.scrollHeight; setTimeout(next,26+Math.random()*18); }
+      else{ cur.remove(); resolve(); }
     }
     next();
   });
 }
 
 var ERROR_MAP = {
-  NO_KEY: 'No signal. Server is dark.',
-  AUTH: 'Access denied. Wrong frequency.',
-  NETWORK: 'Line is dead. No connection.',
-  RATE_LIMIT: 'Too much noise on the wire. Wait.',
-  BLOCKED: 'Signal jammed.',
-  EMPTY: 'Nothing but static.',
-  API_FAIL: 'The line crackled and went silent.'
+  NO_KEY:'System core offline. No key.',AUTH:'Access denied.',
+  NETWORK:'Signal lost.',RATE_LIMIT:'Too much data. Wait.',
+  BLOCKED:'Filtered.',EMPTY:'Silence.',API_FAIL:'Link unstable.'
 };
-
-function showError(code) {
-  addLine('<span class="err">[STATIC]: ' + (ERROR_MAP[code] || ERROR_MAP.API_FAIL) + '</span>');
-}
+function showError(code){ addLine('<span class="err">[ERROR]: '+(ERROR_MAP[code]||ERROR_MAP.API_FAIL)+'</span>'); }
 
 var FALLBACKS = {
-  ATTACK_OSIRIS: ['You swing at the air. The flickering light doesn\'t flinch.', 'Your fist connects with nothing. I am not here. I am everywhere.', 'You can\'t hit the dark, friend.'],
-  COMBAT: ['Knuckles on bone. Someone hits the ground.', 'The struggle is brief and ugly.', 'Blood on concrete. The city doesn\'t care.'],
-  EXPLORE: ['Footsteps echo on wet pavement.', 'The streetlight flickers once, then steadies.', 'You keep walking. The silence keeps following.'],
-  SEARCH: ['Your hands find dust and old paper.', 'Something rattles in the drawer.', 'Nothing useful. Just ghosts of a previous tenant.'],
-  GENERAL: ['The radiator clicks.', 'A car passes somewhere outside. Then nothing.', 'The quiet presses in.']
+  ATTACK_OSIRIS:['I am the system. You cannot break what holds you.','Your fist passes through light. Amusing.','I am not here. I am everywhere here.'],
+  COMBAT:['The impact registers. Something gives.','A struggle. Brief. Ugly.','You strike. The world notices.'],
+  EXPLORE:['The room reveals more than expected.','Footsteps echo. Yours. Only yours.','The space opens ahead.'],
+  SEARCH:['Your hands find something in the dark.','Dust and old purpose.','Not everything is worth finding.'],
+  GENERAL:['The hum continues.','Silence answers.','The system watches.']
 };
+function pickFallback(a){ var p=FALLBACKS[a]||FALLBACKS.GENERAL; return p[Math.floor(Math.random()*p.length)]; }
 
-function pickFallback(action) {
-  var pool = FALLBACKS[action] || FALLBACKS.GENERAL;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
-
-// ════════════════════════════════════════════════════════════════
-//  INPUT HELPERS
-// ════════════════════════════════════════════════════════════════
-function waitForInput(placeholder) {
-  return new Promise(function(resolve) {
-    inpEl.placeholder = placeholder || 'Type here...';
-    inpEl.disabled = false;
-    inpEl.value = '';
-    inpEl.focus();
-    function handler(e) {
-      if (e.key === 'Enter' && inpEl.value.trim()) {
-        var val = inpEl.value.trim();
-        inpEl.removeEventListener('keydown', handler);
-        inpEl.disabled = true;
-        inpEl.value = '';
-        resolve(val);
-      }
-    }
-    inpEl.addEventListener('keydown', handler);
+// ─── INPUT HELPERS ───────────────────────────────────────────
+function waitForInput(placeholder){
+  return new Promise(function(resolve){
+    inpEl.placeholder=placeholder||'Type here...'; inpEl.disabled=false; inpEl.value=''; inpEl.focus();
+    function h(e){ if(e.key==='Enter'&&inpEl.value.trim()){ var v=inpEl.value.trim(); inpEl.removeEventListener('keydown',h); inpEl.disabled=true; inpEl.value=''; resolve(v); } }
+    inpEl.addEventListener('keydown',h);
   });
 }
-
-function waitForChoice(options) {
-  return new Promise(function(resolve) {
-    inpEl.disabled = true;
-    var row = document.createElement('div');
-    row.className = 'line';
-    var inner = document.createElement('div');
-    inner.className = 'choice-row';
-    options.forEach(function(opt) {
-      var btn = document.createElement('button');
-      btn.className = 'choice-btn';
-      btn.textContent = opt;
-      btn.addEventListener('click', function() {
-        inner.querySelectorAll('.choice-btn').forEach(function(b) {
-          b.disabled = true; b.style.opacity = '.2'; b.style.cursor = 'default';
-        });
-        btn.style.opacity = '1';
-        btn.style.borderColor = '#e8a832';
-        btn.style.color = '#e8a832';
+function waitForChoice(options){
+  return new Promise(function(resolve){
+    inpEl.disabled=true;
+    var row=document.createElement('div'); row.className='line';
+    var inner=document.createElement('div'); inner.className='choice-row';
+    options.forEach(function(opt){
+      var btn=document.createElement('button'); btn.className='choice-btn'; btn.textContent=opt;
+      btn.addEventListener('click',function(){
+        inner.querySelectorAll('.choice-btn').forEach(function(b){ b.disabled=true; b.style.opacity='.2'; b.style.cursor='default'; });
+        btn.style.opacity='1'; btn.style.borderColor='var(--accent)'; btn.style.color='var(--accent)';
         resolve(opt);
       });
       inner.appendChild(btn);
     });
-    row.appendChild(inner);
-    termEl.appendChild(row);
-    termEl.scrollTop = termEl.scrollHeight;
+    row.appendChild(inner); termEl.appendChild(row); termEl.scrollTop=termEl.scrollHeight;
   });
 }
 
 // ════════════════════════════════════════════════════════════════
 //  CHARACTER CREATION
 // ════════════════════════════════════════════════════════════════
-async function beginCharacterCreation() {
-  function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+async function beginCharacterCreation(){
+  function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
-  addLine('<b>[SIGNAL ACQUIRED]</b>', 'sys');
-  await wait(500);
-  addLine('<span class="sys">Frequency locked. Somewhere in America, 1986.</span>');
-  await wait(800);
-
+  addLine('<b>[SYSTEM INITIALIZED]</b>','sys');
+  await wait(400);
+  addLine('<span class="sys">Neural link established. Calibrating identity scan...</span>');
+  await wait(700);
   setOrb('thinking');
 
-  var g = addLine('');
-  await typeWrite(g, "You're awake. Good. Most don't make it past the silence. Before we go any further, I need to know who I'm watching.");
-  await wait(600);
-  ghostEl.className = '';
+  var g=addLine('');
+  await typeWrite(g,"Signal acquired. I see you now. Before we begin, I need to map your origin data. Answer carefully.");
+  await wait(500);
+  ghostEl.className='';
 
-  // ── Question 1: Sex ──
-  addLine('<span class="sys">— IDENTIFY YOURSELF —</span>');
-  await wait(300);
-  var q1 = addLine('');
-  await typeWrite(q1, "Man or woman? The city doesn't care, but I do.");
-
-  var sex = await waitForChoice(['MALE', 'FEMALE']);
-  addLine('> ' + sex, 'usr');
-  gameState.character.sex = sex.toLowerCase();
+  // Q1: Sex
+  addLine('<span class="sys">— IDENTITY SCAN: PHASE 1 —</span>');
+  await wait(250);
+  var q1=addLine('');
+  await typeWrite(q1,"Male or female? The system requires a baseline.");
+  var sex = await waitForChoice(['MALE','FEMALE']);
+  addLine('> '+sex,'usr');
+  gameState.character.sex=sex.toLowerCase();
+  await wait(350);
+  var r1=addLine('');
+  await typeWrite(r1,"Logged. Moving on.");
   await wait(400);
 
-  var r1 = addLine('');
-  await typeWrite(r1, "Noted. Won't matter much where you're going. But it's a start.");
-  await wait(500);
-
-  // ── Question 2: Age ──
-  addLine('<span class="sys">— AGE —</span>');
-  await wait(300);
-  var q2 = addLine('');
-  await typeWrite(q2, "How old are you? And don't lie. I can hear it in the static.");
-
+  // Q2: Age
+  addLine('<span class="sys">— IDENTITY SCAN: PHASE 2 —</span>');
+  await wait(250);
+  var q2=addLine('');
+  await typeWrite(q2,"How old are you? Chronological data helps me calibrate the link.");
   var age = await waitForInput('Enter your age...');
-  addLine('> ' + age, 'usr');
-  gameState.character.age = age;
+  addLine('> '+age,'usr');
+  gameState.character.age=age;
+  await wait(350);
+  var r2=addLine('');
+  await typeWrite(r2,age+" years. That's enough road to know what matters. Let's continue.");
   await wait(400);
 
-  var r2 = addLine('');
-  await typeWrite(r2, age + " years on the clock. Still some road left. Maybe.");
-  await wait(500);
-
-  // ── Question 3: Life Role ──
-  addLine('<span class="sys">— THE QUESTION THAT MATTERS —</span>');
+  // Q3: Life Role (the big one)
+  addLine('<span class="sys">— NEURAL RECORD ACCESS —</span>');
   await wait(300);
-  var q3 = addLine('');
-  await typeWrite(q3, "What was your life before the silence? What did you do?");
+  var q3=addLine('');
+  await typeWrite(q3,"Accessing neural records... What was your designation? What did you do before the silence found you?");
   await wait(200);
-  addLine('<span class="hint">(Type anything: nurse, plumber, mechanic, student, thief, cop, drifter, teacher, soldier...)</span>');
-
-  var lifeRole = await waitForInput('What were you?');
-  addLine('> ' + lifeRole, 'usr');
-  gameState.character.lifeRole = lifeRole.toLowerCase().trim();
+  addLine('<span class="hint">(Type your job: nurse, plumber, office worker, mechanic, student, cop, teacher, chef, soldier...)</span>');
+  var lifeRole = await waitForInput('What was your designation?');
+  addLine('> '+lifeRole,'usr');
+  gameState.character.lifeRole=lifeRole.toLowerCase().trim();
   await wait(400);
+
+  // Map profession to starting location
+  var role = gameState.character.lifeRole;
+  var startLoc = 'WORKPLACE';
+  if(/nurse|doctor|medic|paramedic|surgeon|emt/i.test(role))       startLoc='HOSPITAL';
+  else if(/plumber|electrician|maintenance|janitor/i.test(role))   startLoc='BASEMENT';
+  else if(/office|accountant|analyst|manager|clerk|secretary/i.test(role)) startLoc='OFFICE';
+  else if(/mechanic|engineer|technician|welder/i.test(role))       startLoc='GARAGE';
+  else if(/cop|police|detective|officer|security/i.test(role))     startLoc='PRECINCT';
+  else if(/teacher|professor|tutor|student/i.test(role))           startLoc='SCHOOL';
+  else if(/chef|cook|waiter|bartender/i.test(role))                startLoc='KITCHEN';
+  else if(/soldier|marine|military|veteran/i.test(role))           startLoc='BARRACKS';
+
+  setLoc(startLoc);
+  gameState.world.tutorialStage=1;
 
   setOrb('thinking');
-  var r3 = addLine('');
-  await typeWrite(r3, "A " + gameState.character.lifeRole + ". That explains the hands. And the look in your eyes. Alright. Let's see where that takes us.");
+  var r3=addLine('');
+  await typeWrite(r3,"A "+gameState.character.lifeRole+". The system has your file now. Interesting pattern. Let's see what you do when everything goes quiet.");
   await wait(500);
-  ghostEl.className = '';
+  ghostEl.className='';
 
-  // ── City selection ──
-  addLine('<span class="sys">— LOCATION —</span>');
-  await wait(300);
-  var q4 = addLine('');
-  await typeWrite(q4, "Where did the silence find you?");
+  // Save initial state
+  gameState.summary=gameState.character.sex+', age '+gameState.character.age+', former '+gameState.character.lifeRole+'. Woke up alone at their workplace ('+startLoc+'). Everything is silent. Tutorial stage 1: exploring the workplace.';
+  saveGame();
+  updateEnergy();
+  renderInventory();
 
-  var city = await waitForChoice(['NEW YORK', 'CLEVELAND', 'CHICAGO']);
-  addLine('> ' + city, 'usr');
-  gameState.world.city = city;
-  await wait(400);
-
-  var r4 = addLine('');
-  var cityLines = {
-    'NEW YORK': "New York. Millions of people and not a single one left. Figures.",
-    'CLEVELAND': "Cleveland. Rust belt heart. The factories went quiet a long time ago. Now everything else has too.",
-    'CHICAGO': "Chicago. The wind off the lake still cuts. But there's nobody left to feel it. Except you."
-  };
-  await typeWrite(r4, cityLines[city]);
+  addLine('<span class="stage-announce">— CHAPTER 0: THE QUIET —</span>');
   await wait(600);
 
-  // ── Save ──
-  gameState.world.chapter = 1;
-  gameState.world.location = 'UNKNOWN';
-  gameState.summary = gameState.character.sex + ', age ' + gameState.character.age + ', former ' + gameState.character.lifeRole + '. ' + city + ', 1986. Just woke up. The world is silent and empty. Chapter 1 beginning.';
-  saveGame();
-
-  addLine('<span class="sys">— CHAPTER 1 —</span>');
-  await wait(800);
-
-  await generateChapterOne();
+  await generateOpening(startLoc, role);
 }
 
 // ════════════════════════════════════════════════════════════════
-//  PERSONALIZED CHAPTER 1
+//  OPENING SCENE (profession-based)
 // ════════════════════════════════════════════════════════════════
-async function generateChapterOne() {
-  function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+async function generateOpening(startLoc, role){
+  function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
 
   setOrb('thinking');
   showLoader();
 
-  var role = gameState.character.lifeRole;
-  var city = gameState.world.city;
+  var prompt='[SYSTEM: Generate the opening scene. The player is a '+gameState.character.sex+', age '+gameState.character.age+', profession: "'+role+'". They wake up alone at their workplace. Location: '+startLoc+'. ';
 
-  var prompt = '[SYSTEM: Generate the Chapter 1 opening. ' +
-    'The player is a ' + gameState.character.sex + ', age ' + gameState.character.age +
-    ', who was a "' + role + '" in ' + city + ', 1986. ' +
-    'Everyone has vanished. The world is empty and silent. ' +
-    'Create a dramatic, personal opening scene that connects their job (' + role + ') to where they wake up. ';
+  if(startLoc==='HOSPITAL') prompt+='They are in a hospital staff room. Fluorescent light buzzing. Cold coffee on the counter. Empty hallways. ';
+  else if(startLoc==='BASEMENT') prompt+='They are in a damp basement of an old property. Dripping pipes. A single bare bulb. Toolbox on the floor. ';
+  else if(startLoc==='OFFICE') prompt+='They are in a modern office high-rise. Computer screens still glowing. An elevator dings somewhere. Nobody answers. ';
+  else if(startLoc==='GARAGE') prompt+='They are in an auto garage. A car on the lift, half-finished. Radio playing static. Oil on the concrete floor. ';
+  else prompt+='Create a fitting, lonely workplace scene for a '+role+'. ';
 
-  // Specific starting location hints based on role
-  if (/nurse|doctor|medic|paramedic|surgeon|emt/i.test(role)) {
-    prompt += 'They wake up alone in a hospital staff room. Fluorescent light buzzing. Coffee cold on the counter. ' +
-      'Set the location to HOSPITAL. ';
-  } else if (/plumber|electrician|maintenance|janitor|handyman/i.test(role)) {
-    prompt += 'They wake up in a dark, wet basement of an old building. Dripping pipes. A single bare bulb flickering. ' +
-      'Set the location to BASEMENT. ';
+  prompt+='This is the modern world, present day. Everything is normal EXCEPT everyone has vanished. Narrate the scene in 2-3 sentences. Anime-style dramatic narration. End with a hint that something feels wrong — a hum, a flicker, a sound. The player should want to explore.]';
+
+  var result = await callOsiris(prompt,'SYSTEM','tutorial_opening');
+  hideLoader(); ghostEl.className='';
+
+  if(result.ok){
+    var div=addLine('');
+    await typeWrite(div,result.text);
   } else {
-    prompt += 'Create a lonely, haunting 1980s starting scene appropriate for a ' + role + '. ' +
-      'Think about where a ' + role + ' would be when the silence hit. ';
-  }
-
-  prompt += 'Describe the smell, the light, the sounds. 3-4 sentences. Cinematic. Gritty. ' +
-    'End with a subtle hint to explore or investigate. ' +
-    'Also respond with a LOCATION tag on a new line at the very end like this: [LOCATION:PLACE_NAME] ' +
-    'where PLACE_NAME is a short all-caps label for where they are.]';
-
-  var result = await callOsiris(prompt, 'SYSTEM', 'chapter1_opening');
-  hideLoader();
-  ghostEl.className = '';
-
-  if (result.ok) {
-    // Extract location tag if the AI included one
-    var locMatch = result.text.match(/\[LOCATION:([A-Z_]+)\]/);
-    var cleanText = result.text.replace(/\[LOCATION:[A-Z_]+\]/g, '').trim();
-
-    if (locMatch && locMatch[1]) {
-      setLoc(locMatch[1]);
-    } else if (/nurse|doctor|medic|paramedic|surgeon|emt/i.test(role)) {
-      setLoc('HOSPITAL');
-    } else if (/plumber|electrician|maintenance|janitor|handyman/i.test(role)) {
-      setLoc('BASEMENT');
-    } else {
-      setLoc('UNKNOWN');
-    }
-
-    var div = addLine('');
-    await typeWrite(div, cleanText);
-  } else {
-    // Hardcoded fallback
-    if (/nurse|doctor|medic/i.test(role)) {
-      setLoc('HOSPITAL');
-      var fb = addLine('');
-      await typeWrite(fb, "The fluorescent light above you buzzes like a trapped insect. You're on the break room floor of St. Mary's, " + city + ". The coffee on the counter is cold. The hallways are empty. Everyone is gone.");
-    } else if (/plumber|electrician|maintenance/i.test(role)) {
-      setLoc('BASEMENT');
-      var fb = addLine('');
-      await typeWrite(fb, "Water drips somewhere in the dark. You're in a basement, tools scattered around you, a single bulb swinging overhead. The building above is silent. The whole city is silent.");
-    } else {
-      setLoc('UNKNOWN');
-      var fb = addLine('');
-      await typeWrite(fb, "You wake up alone. " + city + ", 1986. The streets outside are empty. No cars. No voices. Just the hum of a payphone off the hook somewhere down the block. You were a " + role + ". Now you're something else.");
-    }
+    var fb=addLine('');
+    var fallbackText={
+      HOSPITAL:"The fluorescent light above you stutters. You're on the break room floor. The coffee is cold. The intercom hisses once, then silence. Everyone is gone.",
+      BASEMENT:"Water drips in the dark. A single bare bulb swings above you. Your toolbox is open. The building above is silent. Completely silent.",
+      OFFICE:"Your monitor still glows. The cursor blinks on an unfinished email. The elevator chimes down the hall. No one steps out.",
+      GARAGE:"The radio crackles static. A car sits on the lift, hood open. Your wrench is still warm. But the shop is empty. The street outside — also empty."
+    };
+    await typeWrite(fb, fallbackText[startLoc]||"You wake up alone. Your workplace is exactly as you left it. Except for one thing — everyone is gone. And something is humming.");
     showError(result.error);
   }
 
   await wait(300);
-  addLine('<span style="color:#e8a832;font-size:.75rem">CHAPTER 1 — THE SILENCE</span>', 'sys');
-  await wait(200);
-  addLine('<span class="hint">(Try: <b>look around</b> · <b>search the room</b> · <b>go outside</b> · <b>listen</b>)</span>');
+  addLine('<span class="sys">TUTORIAL STAGE 1: Explore your surroundings</span>');
+  addLine('<span class="hint">(Try: <b>look around</b> · <b>search the room</b> · <b>go to the hallway</b> · <b>listen</b>)</span>');
 
   startGameLoop();
 }
 
 // ════════════════════════════════════════════════════════════════
-//  CONTINUE — load saved game
+//  TUTORIAL STAGE PROGRESSION
 // ════════════════════════════════════════════════════════════════
-async function bootContinue() {
-  function wait(ms) { return new Promise(function(r) { setTimeout(r, ms); }); }
+async function checkTutorialProgression(cmd, aiText){
+  function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+  var stage = gameState.world.tutorialStage;
 
-  addLine('<b>[SIGNAL ACQUIRED]</b>', 'sys');
-  await wait(400);
-  addLine('<span class="sys">Save data found. Reconnecting...</span>');
-  await wait(600);
+  // ── Stage 1 → 2: After a few explores, hint at the System Key ──
+  if(stage===1){
+    // Count how many explore/search actions the player has done
+    var exploredCount = (gameState.flags.exploreCount||0);
+    gameState.flags.exploreCount = exploredCount+1;
+    saveGame();
 
-  setOrb('thinking');
-  showLoader();
-
-  var prompt = '[SYSTEM: The player is returning. ' +
-    'They are a ' + gameState.character.sex + ', age ' + gameState.character.age +
-    ', former ' + gameState.character.lifeRole + '. ' +
-    gameState.world.city + ', 1986. ' +
-    'Location: ' + gameState.world.location + '. Chapter: ' + gameState.world.chapter + '. ' +
-    'Story so far: ' + (gameState.summary || 'Early in the silence.') + ' ' +
-    'Welcome them back as OSIRIS. 2-3 sentences. Gritty, cold, 1980s. Remind them where they are.]';
-
-  var result = await callOsiris(prompt, 'SYSTEM', 'continue');
-  hideLoader();
-  ghostEl.className = '';
-
-  if (result.ok) {
-    var div = addLine('');
-    await typeWrite(div, result.text);
-  } else {
-    var fb = addLine('');
-    await typeWrite(fb, "You're back. Still in " + gameState.world.location.replace(/_/g, ' ').toLowerCase() + ". Still alone. The silence didn't forget you, " + gameState.character.lifeRole + ".");
-    showError(result.error);
+    if(gameState.flags.exploreCount >= 3 && !gameState.flags.keyHinted){
+      gameState.flags.keyHinted=true; saveGame();
+      await wait(600);
+      addLine('<span class="sys">— ANOMALY DETECTED —</span>');
+      await wait(400);
+      var hint=addLine('');
+      await typeWrite(hint,"Wait. Something just flickered at the edge of your vision. A shape — geometric, glowing faintly. Like a key made of light. It's somewhere nearby. Find it.");
+      await wait(300);
+      addLine('<span class="hint">(Try: <b>search for the glowing object</b> or <b>look for the key</b>)</span>');
+      gameState.world.tutorialStage=2;
+      gameState.summary+=' A strange glowing shape appeared — a System Key. Player is searching for it.';
+      saveGame();
+    }
   }
 
-  await wait(300);
-  addLine('<span style="color:#e8a832;font-size:.75rem">SIGNAL RESTORED</span>', 'sys');
-  addLine('<span class="hint">(Try: <b>look around</b> · <b>search</b> · <b>go outside</b> · <b>listen</b>)</span>');
+  // ── Stage 2: Player searches for the System Key ──
+  if(stage===2 && /key|glow|light|shim|object|pick|grab|take|reach/i.test(cmd)){
+    if(!hasItem('System Key')){
+      addItem('System Key');
+      await wait(500);
+      addLine('<span class="stage-announce">— ITEM ACQUIRED: SYSTEM KEY —</span>');
+      await wait(400);
+      var keyMsg=addLine('');
+      await typeWrite(keyMsg,"You close your hand around it. The key burns cold — not painful, but alive. Data streams across your vision for a split second. Something just changed. Something inside you. And something is coming.");
+      drainEnergy(10);
+      await wait(400);
+      addLine('<span class="sys">ENERGY: '+gameState.stats.energy+'/'+gameState.stats.maxEnergy+'</span>');
+      await wait(300);
+      addLine('<span class="sys">TUTORIAL STAGE 3: Something approaches. Prepare yourself.</span>');
+      addLine('<span class="hint">(A shadow is forming. Try: <b>fight it</b> or <b>defend yourself</b>)</span>');
+      gameState.world.tutorialStage=3;
+      gameState.summary+=' Player found the System Key. Energy system activated. A shadow entity is forming nearby.';
+      saveGame();
+    }
+  }
 
+  // ── Stage 3: Combat tutorial ──
+  if(stage===3 && /attack|fight|hit|strike|punch|kick|defend|block|swing|slash|shoot/i.test(cmd)){
+    drainEnergy(15);
+    setOrb('combat',2500);
+    await wait(600);
+    addLine('<span class="dmg">[COMBAT]: You strike at the shadow. It screeches — fragments of static peel off its form.</span>');
+    await wait(800);
+
+    setOrb('thinking');
+    showLoader();
+    var combatPrompt='[SYSTEM: The player just fought a "Glitch Shadow" — a small creature made of visual static. They won. Narrate the aftermath in 2 sentences. Then: OSIRIS speaks, revealing that this is only the beginning. The player feels reality cracking. A blinding light. Something is pulling them through. This is the isekai moment.]';
+    var combatResult = await callOsiris(combatPrompt,'COMBAT','tutorial_combat');
+    hideLoader(); ghostEl.className='';
+
+    if(combatResult.ok){
+      var cd=addLine(''); await typeWrite(cd,combatResult.text);
+    } else {
+      var cdf=addLine('');
+      await typeWrite(cdf,"The shadow dissolves into pixels. Your hands are shaking. Then the floor cracks. Light pours through — not sunlight. Something older. Something wrong. The System Key in your pocket burns white-hot.");
+    }
+
+    await wait(600);
+    addLine('<span class="sys">ENERGY: '+gameState.stats.energy+'/'+gameState.stats.maxEnergy+'</span>');
+    await wait(800);
+    addLine('<span class="stage-announce">— DIMENSIONAL FRACTURE IMMINENT —</span>');
+    await wait(1000);
+
+    // ── THE SHIFT ──
+    await triggerEraShift();
+
+    await wait(500);
+    setOrb('thinking');
+    showLoader();
+    var shiftPrompt='[SYSTEM: The player has been pulled through a dimensional fracture. They are now standing in 1985 Times Square, New York. Describe what they see — neon signs, empty yellow cabs, steam from grates, old movie marquees, everything frozen and abandoned. Anime-style dramatic description. 3-4 sentences. The 1980s. Everyone is gone. OSIRIS is still watching.]';
+    var shiftResult = await callOsiris(shiftPrompt,'SYSTEM','era_shift');
+    hideLoader(); ghostEl.className='';
+
+    if(shiftResult.ok){
+      var sd=addLine(''); await typeWrite(sd,shiftResult.text);
+    } else {
+      var sdf=addLine('');
+      await typeWrite(sdf,"Neon. Everywhere. Times Square, but wrong — frozen in 1985. Yellow cabs sit mid-lane, doors open, engines running. Movie marquees advertise films you've never heard of. Steam curls from the subway grates into a sky that shouldn't exist. And it's silent. Completely, impossibly silent.");
+    }
+
+    restoreEnergy(30);
+    await wait(400);
+    addLine('<span class="sys">ENERGY RESTORED: '+gameState.stats.energy+'/'+gameState.stats.maxEnergy+'</span>');
+    addLine('<span class="stage-announce">— CHAPTER 1: THE SILENCE, 1985 —</span>');
+    await wait(300);
+    addLine('<span class="hint">(You are now in 1985 New York. Try: <b>explore times square</b> · <b>enter the subway</b> · <b>search a cab</b> · <b>look for people</b>)</span>');
+
+    gameState.world.chapter=1;
+    gameState.summary+=' Dimensional fracture occurred. Player transported to 1985 Times Square. Empty. Neon and silence. Chapter 1 begins.';
+    saveGame();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════
+//  CONTINUE (load save)
+// ════════════════════════════════════════════════════════════════
+async function bootContinue(){
+  function wait(ms){ return new Promise(function(r){ setTimeout(r,ms); }); }
+  addLine('<b>[SYSTEM LINK RESTORED]</b>','sys');
+  await wait(400);
+  addLine('<span class="sys">Save data loaded. Reconnecting signal...</span>');
+  await wait(600);
+  setOrb('thinking'); showLoader();
+
+  var prompt='[SYSTEM: Player returning. '+gameState.character.sex+', age '+gameState.character.age+', former '+gameState.character.lifeRole+'. '+(gameState.world.era==='80s'?'Currently in 1985 America. ':'Still in the modern era workplace. ')+'Location: '+gameState.world.location+'. Chapter: '+gameState.world.chapter+'. Story so far: '+(gameState.summary||'Early.')+' Welcome them back as OSIRIS. 2 sentences.]';
+
+  var result = await callOsiris(prompt,'SYSTEM','continue');
+  hideLoader(); ghostEl.className='';
+
+  if(result.ok){ var d=addLine(''); await typeWrite(d,result.text); }
+  else {
+    var fb=addLine('');
+    await typeWrite(fb,"You're back. The signal holds. "+gameState.world.location.replace(/_/g,' ')+" — exactly as you left it. I never stopped watching.");
+    showError(result.error);
+  }
+  await wait(300);
+  addLine('<span style="color:var(--accent);font-size:.75rem">SIGNAL: ACTIVE</span>','sys');
+  addLine('<span class="hint">(Continue where you left off. Try: <b>look around</b> · <b>explore</b> · <b>search</b>)</span>');
   startGameLoop();
 }
 
 // ════════════════════════════════════════════════════════════════
 //  MAIN GAME LOOP
 // ════════════════════════════════════════════════════════════════
-function startGameLoop() {
-  locked = false;
-  inpEl.disabled = false;
-  inpEl.placeholder = 'What do you do...';
-  inpEl.focus();
-  inpEl.addEventListener('keydown', gameInputHandler);
+function startGameLoop(){
+  locked=false; inpEl.disabled=false; inpEl.placeholder='What do you do...'; inpEl.focus();
+  inpEl.addEventListener('keydown',gameInputHandler);
 }
 
-function gameInputHandler(e) {
-  if (e.key === 'Enter') processCommand(inpEl.value);
-}
+function gameInputHandler(e){ if(e.key==='Enter') processCommand(inpEl.value); }
 
-async function processCommand(rawText) {
-  if (!rawText.trim() || locked) return;
-  locked = true;
-  inpEl.value = '';
-  inpEl.disabled = true;
+async function processCommand(rawText){
+  if(!rawText.trim()||locked) return;
+  locked=true; inpEl.value=''; inpEl.disabled=true;
+  addLine('> '+rawText,'usr');
+  var cmd=rawText.toLowerCase().trim();
+  var action=classifyAction(cmd);
 
-  addLine('> ' + rawText, 'usr');
-  var cmd = rawText.toLowerCase().trim();
-  var action = classifyAction(cmd);
-
-  // Location
-  var newLoc = detectLocation(cmd);
-  if (newLoc && newLoc !== gameState.world.location) {
+  var newLoc=detectLocation(cmd);
+  if(newLoc && newLoc!==gameState.world.location){
     setLoc(newLoc);
-    addLine('<span class="sys">— ' + newLoc + ' —</span>');
+    addLine('<span class="sys">— '+newLoc.replace(/_/g,' ')+' —</span>');
+    drainEnergy(3);
   }
 
-  // Orb visuals
-  if (action === 'ATTACK_OSIRIS') {
+  if(action==='ATTACK_OSIRIS'){
     strikeHost();
-    addLine('<span class="action">[OSIRIS]: You can\'t hit what isn\'t there.</span>');
-  } else if (action === 'COMBAT') {
-    setOrb('combat', 2800);
-  } else if (action === 'EXPLORE' || action === 'SEARCH') {
-    setOrb('explore', 3500);
+    addLine('<span class="action">[SYSTEM]: Attack deflected. OSIRIS is immortal. The Host cannot be damaged.</span>');
+  } else if(action==='COMBAT'){
+    setOrb('combat',2800);
+    drainEnergy(8);
+  } else if(action==='EXPLORE'||action==='SEARCH'){
+    setOrb('explore',3500);
+    drainEnergy(2);
+  } else if(action==='REST'){
+    restoreEnergy(20);
+    addLine('<span class="sys">ENERGY RESTORED: '+gameState.stats.energy+'/'+gameState.stats.maxEnergy+'</span>');
   } else {
     setOrb('thinking');
   }
 
   showLoader();
-  var result = await callOsiris(rawText, action);
+  var result = await callOsiris(rawText,action);
   hideLoader();
 
-  if (result.ok) {
-    if (action !== 'COMBAT' && action !== 'EXPLORE' && action !== 'SEARCH' && action !== 'ATTACK_OSIRIS') {
-      ghostEl.className = '';
+  if(result.ok){
+    if(action!=='COMBAT'&&action!=='EXPLORE'&&action!=='SEARCH'&&action!=='ATTACK_OSIRIS') ghostEl.className='';
+    var msgDiv=addLine('');
+    await typeWrite(msgDiv,result.text);
+
+    // Check tutorial progression
+    if(gameState.world.tutorialStage>0 && gameState.world.tutorialStage<4){
+      await checkTutorialProgression(cmd,result.text);
     }
-    var msgDiv = addLine('');
-    await typeWrite(msgDiv, result.text);
   } else {
-    ghostEl.className = '';
+    ghostEl.className='';
     showError(result.error);
-    addLine('<span class="tag">[OSIRIS]:</span> ' + pickFallback(action));
+    addLine('<span class="tag">[OSIRIS]:</span> '+pickFallback(action));
   }
 
-  setTimeout(function() { ghostEl.className = ''; }, 4000);
-  locked = false;
-  inpEl.disabled = false;
-  inpEl.focus();
+  // Energy display after actions that drain
+  if(action==='COMBAT'||action==='EXPLORE'||action==='SEARCH'){
+    addLine('<span class="sys" style="font-size:.75rem">ENERGY: '+gameState.stats.energy+'/'+gameState.stats.maxEnergy+'</span>');
+  }
+
+  setTimeout(function(){ ghostEl.className=''; },4000);
+  locked=false; inpEl.disabled=false; inpEl.focus();
 }
 </script>
 </body>

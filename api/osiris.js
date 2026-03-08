@@ -81,7 +81,7 @@ module.exports = async function handler(req, res) {
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_PROMPT
     });
 
@@ -110,11 +110,19 @@ module.exports = async function handler(req, res) {
 
     const msg = err?.message || "";
 
-    if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("PERMISSION_DENIED")) {
+    if (
+      msg.includes("API_KEY_INVALID") ||
+      msg.includes("401") ||
+      msg.includes("PERMISSION_DENIED")
+    ) {
       return res.status(401).json({ ok: false, error: "AUTH" });
     }
 
-    if (err?.status === 429 || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
+    if (
+      err?.status === 429 ||
+      msg.includes("429") ||
+      msg.includes("RESOURCE_EXHAUSTED")
+    ) {
       return res.status(429).json({ ok: false, error: "RATE_LIMIT" });
     }
 

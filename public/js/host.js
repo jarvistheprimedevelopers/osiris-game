@@ -734,6 +734,11 @@
     ghostEl.style.display = "flex";
     termEl.style.display = "flex";
     document.getElementById("bar").style.display = "flex";
+    // Show retro panels
+    var inv = document.getElementById("inv-panel");
+    if (inv) inv.style.display = "flex";
+    var hud = document.getElementById("hud");
+    if (hud) hud.style.display = "flex";
   }
 
   function enableInput() {

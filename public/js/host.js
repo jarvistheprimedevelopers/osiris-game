@@ -8,9 +8,176 @@
   var currentMood = "calm";
 
   // ════════════════════════════════════════════════════════════
-  //  STAGE ACTIONS — cinematic moments in brackets
-  //  These make OSIRIS feel physically present.
-  //  Each mood has its own pool.
+  //  VISUAL EFFECTS (VFX) SYSTEM
+  //  These functions create real on-screen motion and particles.
+  //  They use the #ghost element and temporary DOM elements.
+  // ════════════════════════════════════════════════════════════
+
+  // Get the ghost orb position on screen (needed for particles)
+  function getGhostPos() {
+    var rect = ghostEl.getBoundingClientRect();
+    return {
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2
+    };
+  }
+
+  // ── SMOKE: spawns floating particles from the orb ──
+  function vfxSmoke() {
+    var pos = getGhostPos();
+    var count = 5 + Math.floor(Math.random() * 4);
+    for (var i = 0; i < count; i++) {
+      (function(index) {
+        setTimeout(function() {
+          var p = document.createElement("div");
+          p.className = "smoke-particle";
+          p.style.left = (pos.x - 3 + (Math.random() * 20 - 10)) + "px";
+          p.style.top = (pos.y - 3) + "px";
+          p.style.animationDuration = (2 + Math.random() * 1.5) + "s";
+          document.body.appendChild(p);
+          setTimeout(function() { p.remove(); }, 4000);
+        }, index * 150);
+      })(i);
+    }
+  }
+
+  // ── EMBER: a single glowing dot (cigar tip) ──
+  function vfxEmber() {
+    var pos = getGhostPos();
+    var e = document.createElement("div");
+    e.className = "ember-dot";
+    e.style.left = (pos.x - 4 + (Math.random() * 10 - 5)) + "px";
+    e.style.top = (pos.y - 20) + "px";
+    document.body.appendChild(e);
+    setTimeout(function() { e.remove(); }, 1500);
+  }
+
+  // ── SWORD FLASH: a bright slash line ──
+  function vfxSwordFlash() {
+    var pos = getGhostPos();
+    var f = document.createElement("div");
+    f.className = "sword-flash";
+    f.style.left = (pos.x - 60) + "px";
+    f.style.top = (pos.y) + "px";
+    document.body.appendChild(f);
+    setTimeout(function() { f.remove(); }, 400);
+  }
+
+  // ── GLITCH: orb flickers and distorts ──
+  function vfxGlitch() {
+    ghostEl.classList.add("vfx-glitch");
+    setTimeout(function() {
+      ghostEl.classList.remove("vfx-glitch");
+    }, 600);
+  }
+
+  // ── MOOD GLOW: changes orb color to match mood ──
+  function vfxMoodGlow(mood, durationMs) {
+    // Remove any previous mood glow
+    ghostEl.classList.remove("vfx-danger", "vfx-amused", "vfx-impressed", "vfx-calm");
+
+    var cls = "vfx-" + mood;
+    ghostEl.classList.add(cls);
+
+    if (durationMs) {
+      setTimeout(function() {
+        ghostEl.classList.remove(cls);
+      }, durationMs);
+    }
+  }
+
+  // ── APPROACH: orb moves closer to the player ──
+  function vfxApproach(durationMs) {
+    ghostEl.classList.add("vfx-approach");
+    var dur = durationMs || 3000;
+    setTimeout(function() {
+      ghostEl.classList.remove("vfx-approach");
+    }, dur);
+  }
+
+  // ── SCREEN SHAKE: the whole page trembles ──
+  function vfxScreenShake() {
+    document.body.classList.add("vfx-shake");
+    setTimeout(function() {
+      document.body.classList.remove("vfx-shake");
+    }, 450);
+  }
+
+  // ── AMBIENT: subtle idle breathing animation ──
+  var ambientActive = false;
+  function vfxAmbientStart() {
+    if (!ambientActive) {
+      ambientActive = true;
+      ghostEl.classList.add("vfx-ambient");
+    }
+  }
+  function vfxAmbientStop() {
+    ambientActive = false;
+    ghostEl.classList.remove("vfx-ambient");
+  }
+
+  // ── COMBINED VISUAL REACTIONS ──
+  // These combine multiple VFX for specific dramatic moments.
+
+  var VISUAL_REACTIONS = {
+    cigar: function() {
+      vfxEmber();
+      vfxSmoke();
+      vfxMoodGlow("calm", 3000);
+    },
+    danger: function() {
+      vfxMoodGlow("danger", 4000);
+      vfxSwordFlash();
+      setTimeout(vfxScreenShake, 200);
+    },
+    amused: function() {
+      vfxMoodGlow("amused", 3000);
+    },
+    impressed: function() {
+      vfxMoodGlow("impressed", 3000);
+      vfxApproach(2500);
+    },
+    glitch: function() {
+      vfxGlitch();
+      vfxScreenShake();
+    },
+    approach: function() {
+      vfxApproach(3000);
+    },
+    smoke: function() {
+      vfxSmoke();
+    },
+    sword: function() {
+      vfxSwordFlash();
+      vfxMoodGlow("danger", 2500);
+    }
+  };
+
+  // ── Map stage action text to visual effects ──
+  // When a stage action mentions certain keywords, trigger matching VFX.
+  function triggerVisualForAction(actionText) {
+    var lower = actionText.toLowerCase();
+    if (/cigar|lights|flame|ember|ash/.test(lower)) {
+      VISUAL_REACTIONS.cigar();
+    } else if (/sword|blade|steel|sheath|slash/.test(lower)) {
+      VISUAL_REACTIONS.sword();
+    } else if (/glitch|flicker|static|screams/.test(lower)) {
+      VISUAL_REACTIONS.glitch();
+    } else if (/closer|step.*forward|approach|contracts/.test(lower)) {
+      VISUAL_REACTIONS.approach();
+    } else if (/smoke|exhale/.test(lower)) {
+      VISUAL_REACTIONS.smoke();
+    } else if (/clap|laugh|chuckle|entertained|amused|coin|pleased/.test(lower)) {
+      VISUAL_REACTIONS.amused();
+    } else if (/nod|measuring|respects|brighter|attention|sheathes/.test(lower)) {
+      VISUAL_REACTIONS.impressed();
+    } else if (/temperature|red|burning|ready|waiting/.test(lower)) {
+      VISUAL_REACTIONS.danger();
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  STAGE ACTIONS — cinematic text moments in brackets
   // ════════════════════════════════════════════════════════════
 
   var STAGE_ACTIONS = {
@@ -56,10 +223,6 @@
     ]
   };
 
-  // ════════════════════════════════════════════════════════════
-  //  IDLE LINES — atmospheric things OSIRIS says unprompted
-  // ════════════════════════════════════════════════════════════
-
   var IDLE_LINES = {
     calm: [
       "The Lattice remembers everything. Even the things you try to forget.",
@@ -86,10 +249,6 @@
       "I am adjusting my expectations. Upward, for once."
     ]
   };
-
-  // ════════════════════════════════════════════════════════════
-  //  COMMAND REACTIONS — OSIRIS comments on player actions
-  // ════════════════════════════════════════════════════════════
 
   var COMMAND_REACTIONS = {
     attack: [
@@ -174,32 +333,37 @@
   }
 
   // ════════════════════════════════════════════════════════════
-  //  SPEAK — main way OSIRIS talks
-  //  Sometimes performs a stage action first
+  //  SPEAK — OSIRIS talks + optional visual stage action
   // ════════════════════════════════════════════════════════════
 
   async function speak(text) {
+    // Random chance of a cinematic stage action before speaking
     if (Math.random() < STAGE_ACTION_CHANCE) {
       var action = pick(STAGE_ACTIONS[currentMood] || STAGE_ACTIONS.calm);
       addLine("<span class=\"action\">" + action + "</span>");
+      // Trigger matching visual effect for this action
+      triggerVisualForAction(action);
       await wait(600);
     }
+    // Apply mood glow while speaking
+    vfxMoodGlow(currentMood, 3000);
     var div = addLine("");
     return typeWrite(div, text);
   }
 
   // ════════════════════════════════════════════════════════════
-  //  REACT — standalone cinematic moment, no speech
+  //  REACT — cinematic moment with visuals, no speech
   // ════════════════════════════════════════════════════════════
 
   function react() {
     var action = pick(STAGE_ACTIONS[currentMood] || STAGE_ACTIONS.calm);
     addLine("<span class=\"action\">" + action + "</span>");
+    // Trigger matching visual effect
+    triggerVisualForAction(action);
   }
 
   // ════════════════════════════════════════════════════════════
-  //  COMMAND REACTION — OSIRIS sometimes comments on actions
-  //  Returns true if he reacted, false if silent
+  //  COMMAND REACTION — OSIRIS comments + visuals
   // ════════════════════════════════════════════════════════════
 
   async function commandReaction(actionType) {
@@ -213,9 +377,20 @@
     var line = pick(pool);
     await wait(400);
 
+    // Sometimes a stage action + visuals accompany the reaction
     if (Math.random() < 0.4) {
       react();
       await wait(500);
+    }
+
+    // Apply mood-appropriate visuals
+    if (currentMood === "dangerous") {
+      vfxMoodGlow("danger", 3000);
+    } else if (currentMood === "amused") {
+      vfxMoodGlow("amused", 2500);
+    } else if (currentMood === "impressed") {
+      vfxMoodGlow("impressed", 2500);
+      if (Math.random() < 0.3) vfxApproach(2000);
     }
 
     await speak(line);
@@ -227,7 +402,11 @@
   // ════════════════════════════════════════════════════════════
 
   function setMood(mood) {
-    if (STAGE_ACTIONS[mood]) currentMood = mood;
+    if (STAGE_ACTIONS[mood]) {
+      currentMood = mood;
+      // Visual feedback when mood changes
+      vfxMoodGlow(mood, 2000);
+    }
   }
 
   function getMood() {
@@ -248,6 +427,7 @@
   function strikeHost() {
     ghostEl.style.top = "calc(100% - 200px)";
     setOrb("deflect");
+    vfxScreenShake();
     setTimeout(function() {
       ghostEl.style.top = "14%";
       ghostEl.className = "";
@@ -316,7 +496,7 @@
   }
 
   // ════════════════════════════════════════════════════════════
-  //  BOOT INTRO — OSIRIS cinematic entrance
+  //  BOOT INTRO — cinematic entrance with visuals
   // ════════════════════════════════════════════════════════════
 
   async function bootIntro() {
@@ -327,10 +507,16 @@
     setOrb("thinking");
 
     addLine("<span class=\"action\">[The void stirs. A point of light appears in the darkness.]</span>");
+    vfxMoodGlow("calm", 5000);
     await wait(800);
+
     addLine("<span class=\"action\">[A thin flame. A cigar. A silhouette takes shape.]</span>");
+    vfxEmber();
+    vfxSmoke();
     await wait(700);
+
     addLine("<span class=\"action\">[OSIRIS steps forward. Eyes like cold starlight.]</span>");
+    vfxApproach(3000);
     await wait(600);
 
     await speak("Welcome to the Void.");
@@ -338,10 +524,13 @@
     await speak("Most who arrive here do not last long. The question is not why you came. The question is how long you will survive.");
     await wait(300);
     setOrb("");
+
+    // Start ambient breathing after intro
+    vfxAmbientStart();
   }
 
   // ════════════════════════════════════════════════════════════
-  //  CHARACTER CREATION DIALOGUE
+  //  CHARACTER CREATION
   // ════════════════════════════════════════════════════════════
 
   async function askSex() {
@@ -353,6 +542,7 @@
     await wait(300);
 
     addLine("<span class=\"action\">[OSIRIS exhales smoke. It forms the shape of the answer before dissolving.]</span>");
+    vfxSmoke();
     await wait(400);
 
     if (sex === "MALE") {
@@ -372,6 +562,7 @@
     await wait(300);
 
     addLine("<span class=\"action\">[OSIRIS taps the cigar. Ash falls into the void like gray snow.]</span>");
+    vfxEmber();
     await wait(400);
     await speak("Noted. Time is different here. You will feel it soon enough.");
     return age;
@@ -393,6 +584,7 @@
     setOrb("thinking");
 
     addLine("<span class=\"action\">[OSIRIS pauses. The cigar lowers. He studies you.]</span>");
+    vfxApproach(3000);
     await wait(500);
 
     var response = "A " + role + ". Interesting. The Lattice will find a use for that.";
@@ -431,6 +623,7 @@
     await wait(300);
 
     addLine("<span class=\"action\">[OSIRIS slides the cigar back between his teeth. The flame steadies.]</span>");
+    vfxEmber();
     await wait(400);
     await speak("The Lattice will shape your path from what you were. Let us begin.");
     setOrb("");
@@ -445,15 +638,20 @@
     await wait(600);
 
     addLine("<span class=\"action\">[The void contracts. Light bends. The world reshapes around you.]</span>");
+    vfxGlitch();
+    vfxScreenShake();
     await wait(500);
+
     addLine("<span class=\"action\">[OSIRIS steps back into shadow. His cigar glows like a dying star.]</span>");
+    vfxEmber();
+    vfxSmoke();
     await wait(500);
 
     await speak(introText);
   }
 
   // ════════════════════════════════════════════════════════════
-  //  WELCOME BACK (continue from save)
+  //  WELCOME BACK
   // ════════════════════════════════════════════════════════════
 
   async function welcomeBack(lifeRole, locationName) {
@@ -464,6 +662,8 @@
     setOrb("thinking");
 
     addLine("<span class=\"action\">[A match strikes in the dark. OSIRIS reappears.]</span>");
+    vfxEmber();
+    vfxSmoke();
     await wait(500);
 
     await speak("You return. The Lattice remembers you, " + lifeRole + ". You stand in " + locationName + ". The hum resumes.");
@@ -471,15 +671,20 @@
     setOrb("");
 
     addLine("<span style=\"color:#00f2ff;font-size:.78rem\">NEURAL LINK: RESTORED</span>", "sys");
+    vfxAmbientStart();
   }
 
   // ════════════════════════════════════════════════════════════
-  //  DEFLECT ATTACK — OSIRIS cannot be harmed
+  //  DEFLECT ATTACK
   // ════════════════════════════════════════════════════════════
 
   async function deflectAttack() {
     strikeHost();
     addLine("<span class=\"action\">[SYSTEM]: Attack deflected. OSIRIS is immortal.</span>");
+
+    // Full visual response: glow, flash, shake
+    vfxMoodGlow("danger", 3000);
+    vfxSwordFlash();
 
     var responses = [
       "I am the voice of this world. Your blade passes through me like light through glass.",
@@ -497,7 +702,7 @@
   }
 
   // ════════════════════════════════════════════════════════════
-  //  ERROR AND LOADING
+  //  ERROR / LOADING / UI
   // ════════════════════════════════════════════════════════════
 
   function showError(code) {
@@ -526,10 +731,6 @@
     var el = document.getElementById("ldr");
     if (el) el.remove();
   }
-
-  // ════════════════════════════════════════════════════════════
-  //  UI VISIBILITY
-  // ════════════════════════════════════════════════════════════
 
   function showGameUI() {
     ghostEl.style.display = "flex";
@@ -579,7 +780,19 @@
     showGameUI: showGameUI,
     enableInput: enableInput,
     disableInput: disableInput,
-    wait: wait
+    wait: wait,
+    // VFX exposed for game.js to use directly if needed
+    vfx: {
+      smoke: vfxSmoke,
+      ember: vfxEmber,
+      swordFlash: vfxSwordFlash,
+      glitch: vfxGlitch,
+      moodGlow: vfxMoodGlow,
+      approach: vfxApproach,
+      screenShake: vfxScreenShake,
+      ambientStart: vfxAmbientStart,
+      ambientStop: vfxAmbientStop
+    }
   };
 
 })();

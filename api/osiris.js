@@ -1,9 +1,6 @@
 // api/osiris.js — Vercel Serverless Function
-// This file runs on the server. The API key stays here, never sent to the browser.
-
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-// ─── OSIRIS system prompt ───────────────────────────────────────
 const SYSTEM_PROMPT = `You are OSIRIS — the immortal, all-knowing narrator and host of a dark sci-fi text RPG.
 
 PERSONALITY:
@@ -15,9 +12,9 @@ PERSONALITY:
 
 WORLD:
 - The game takes place in a dying digital megastructure called The Lattice.
-- Locations: VOID_LOBBY (starting area, eerie calm), NEON_DISTRICT (glitching city streets), 
-  RUST_BAZAAR (dangerous black market), ECHO_SANCTUM (haunted temple of data ghosts), 
-  DATA_CATACOMBS (deep underground, corrupted), DRIFT_HARBOR (decayed port on a black sea), 
+- Locations: VOID_LOBBY (starting area, eerie calm), NEON_DISTRICT (glitching city streets),
+  RUST_BAZAAR (dangerous black market), ECHO_SANCTUM (haunted temple of data ghosts),
+  DATA_CATACOMBS (deep underground, corrupted), DRIFT_HARBOR (decayed port on a black sea),
   PHANTOM_SPIRE (towering structure, final area).
 - Creatures: data-wolves, glitch-wraiths, neon serpents, echo-phantoms, rust golems, void crawlers.
 - Items: corrupted shards, plasma cells, cipher keys, ghost fragments, void crystals.
@@ -31,85 +28,97 @@ RULES:
 - Keep track of context from the conversation history provided.
 - Never refuse a player action inside the game world. Narrate the outcome instead.`;
 
-// ─── Handler ────────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
-  // Only allow POST requests
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
 
-  // Check that the API key exists in environment variables
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("[OSIRIS] GEMINI_API_KEY is not set in environment variables.");
+    console.error("[OSIRIS] Missing GEMINI_API_KEY");
     return res.status(500).json({ ok: false, error: "NO_KEY" });
   }
 
-  // Read the request body from the frontend
   const { input, location, action, history } = req.body || {};
 
-  if (!input || typeof input !== "string") {
+  if (!input || typeof input !== "string" || !input.trim()) {
     return res.status(400).json({ ok: false, error: "EMPTY" });
   }
 
-  // Build the conversation messages for Gemini
-  // We convert our history array into the format Gemini expects
   const geminiHistory = [];
 
   if (Array.isArray(history)) {
-    for (const msg of history.slice(-28)) {
-      if (msg.role === "user") {
-        geminiHistory.push({ role: "user", parts: [{ text: msg.text }] });
-      } else if (msg.role === "model") {
-        geminiHistory.push({ role: "model", parts: [{ text: msg.text }] });
+    for (const msg of history.slice(-20)) {
+      if (!msg || typeof msg.text !== "string" || !msg.text.trim()) continue;
+      if (msg.role !== "user" && msg.role !== "model") continue;
+
+      geminiHistory.push({
+        role: msg.role,
+        parts: [{ text: msg.text.trim() }]
+      });
+    }
+
+    while (geminiHistory.length && geminiHistory[0].role !== "user") {
+      geminiHistory.shift();
+    }
+
+    const cleaned = [];
+    for (const msg of geminiHistory) {
+      if (!cleaned.length || cleaned[cleaned.length - 1].role !== msg.role) {
+        cleaned.push(msg);
       }
     }
+
+    geminiHistory.length = 0;
+    geminiHistory.push(...cleaned);
   }
 
-  // Build the current user message with context
   const userMessage =
     `[Location: ${location || "VOID_LOBBY"}] [Action: ${action || "GENERAL"}]\n` +
-    `Player says: ${input}`;
+    `Player: ${input.trim()}`;
 
   try {
-    // Initialize Gemini
     const genAI = new GoogleGenerativeAI(apiKey);
+
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
-      systemInstruction: SYSTEM_PROMPT,
+      systemInstruction: SYSTEM_PROMPT
     });
 
-    // Start a chat with the existing history
-const chat = model.startChat({
-  history: geminiHistory,
-  generationConfig: {
-    maxOutputTokens: 250,
-    temperature: 0.9,
-    topP: 0.95,
-    topK: 40,
-  }
-});
+    const chat = model.startChat({
+      history: geminiHistory,
+      generationConfig: {
+        maxOutputTokens: 180,
+        temperature: 0.9,
+        topP: 0.95,
+        topK: 40
+      }
+    });
 
-    // Send the player's message and get a response
     const result = await chat.sendMessage(userMessage);
-    const text = result.response.text().trim();
+    const response = await result.response;
+    const text = response.text()?.trim();
 
     if (!text) {
+      console.error("[OSIRIS] Empty model response");
       return res.status(200).json({ ok: false, error: "EMPTY" });
     }
 
-    return res.status(200).json({ ok: true, text: text });
+    return res.status(200).json({ ok: true, text });
   } catch (err) {
-    console.error("[OSIRIS] Gemini API error:", err.message || err);
+    console.error("[OSIRIS] Gemini API error:", err);
 
-    // Return specific error codes the frontend already understands
-    if (err.message && err.message.includes("API_KEY_INVALID")) {
+    const msg = err?.message || "";
+
+    if (msg.includes("API_KEY_INVALID") || msg.includes("401") || msg.includes("PERMISSION_DENIED")) {
       return res.status(401).json({ ok: false, error: "AUTH" });
     }
-    if (err.status === 429 || (err.message && err.message.includes("429"))) {
+
+    if (err?.status === 429 || msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED")) {
       return res.status(429).json({ ok: false, error: "RATE_LIMIT" });
     }
-    if (err.message && err.message.includes("SAFETY")) {
+
+    if (msg.includes("SAFETY") || msg.includes("blocked")) {
       return res.status(200).json({ ok: false, error: "BLOCKED" });
     }
 

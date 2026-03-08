@@ -734,11 +734,25 @@
     ghostEl.style.display = "flex";
     termEl.style.display = "flex";
     document.getElementById("bar").style.display = "flex";
-    // Show retro panels
     var inv = document.getElementById("inv-panel");
     if (inv) inv.style.display = "flex";
     var hud = document.getElementById("hud");
     if (hud) hud.style.display = "flex";
+    var exitBtn = document.getElementById("exit-btn");
+    if (exitBtn) exitBtn.style.display = "block";
+  }
+
+  // Hide the game UI (used when returning to menu)
+  function hideGameUI() {
+    ghostEl.style.display = "none";
+    termEl.style.display = "none";
+    document.getElementById("bar").style.display = "none";
+    var inv = document.getElementById("inv-panel");
+    if (inv) inv.style.display = "none";
+    var hud = document.getElementById("hud");
+    if (hud) hud.style.display = "none";
+    var exitBtn = document.getElementById("exit-btn");
+    if (exitBtn) exitBtn.style.display = "none";
   }
 
   function enableInput() {
@@ -1004,6 +1018,7 @@
     showLoader: showLoader,
     hideLoader: hideLoader,
     showGameUI: showGameUI,
+    hideGameUI: hideGameUI,
     enableInput: enableInput,
     disableInput: disableInput,
     wait: wait,

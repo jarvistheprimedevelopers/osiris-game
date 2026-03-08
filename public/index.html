@@ -174,47 +174,134 @@
     transform:scale(.95);
   }
 
-  /* ═══ RETRO INVENTORY SIDEBAR ═══ */
-  #inv-panel{
-    position:fixed;top:10px;right:10px;bottom:120px;
-    width:140px;z-index:80;
+  /* ═══ RIGHT SIDE BUTTONS ═══ */
+  #side-buttons{
+    position:fixed;top:50%;right:10px;
+    transform:translateY(-50%);
+    z-index:80;
+    display:none;flex-direction:column;gap:6px;
+  }
+  .side-btn{
+    width:56px;padding:10px 0;
+    text-align:center;
+    color:#5a5a30;
+    font-size:.58rem;font-weight:800;letter-spacing:2px;
+    border:2px solid #2a2a18;
     background:#0a0a08;
-    border:2px solid #3a3a20;
-    border-radius:2px;
-    display:none;flex-direction:column;
-    font-size:.72rem;
-    box-shadow:inset 0 0 20px rgba(0,0,0,.8),0 0 8px rgba(58,58,32,.15);
+    cursor:pointer;
+    transition:all .2s ease;
+    user-select:none;
+    box-shadow:inset 0 0 8px rgba(0,0,0,.6);
   }
-  .inv-header{
-    text-align:center;padding:8px 0 6px;
-    color:#a89040;letter-spacing:3px;font-weight:800;font-size:.68rem;
-    border-bottom:2px solid #3a3a20;
-    background:#0e0e0a;
-    text-shadow:0 0 6px rgba(168,144,64,.25);
+  .side-btn:hover{
+    border-color:#a89040;
+    color:#c8b850;
+    text-shadow:0 0 6px rgba(200,184,80,.25);
+    background:#0c0c08;
   }
-  .inv-slots{
-    flex:1;overflow-y:auto;padding:6px;
-    display:flex;flex-direction:column;gap:4px;
-    scrollbar-width:thin;scrollbar-color:#2a2a18 #0a0a08;
+  .side-btn:active{
+    transform:scale(.94);
   }
-  .inv-slots::-webkit-scrollbar{width:4px}
-  .inv-slots::-webkit-scrollbar-track{background:#0a0a08}
-  .inv-slots::-webkit-scrollbar-thumb{background:#3a3a20;border-radius:2px}
+  .side-btn.active{
+    border-color:#c8b850;
+    color:#c8b850;
+    background:#12120e;
+    text-shadow:0 0 8px rgba(200,184,80,.3);
+  }
+
+  /* ═══ INVENTORY SLOTS (inside center panel) ═══ */
   .inv-slot{
-    padding:6px 8px;
+    padding:10px 12px;
     border:1px solid #222210;
     background:#080806;
     color:#4a4a30;
-    letter-spacing:1px;
-    font-family:inherit;font-size:.65rem;
+    letter-spacing:2px;
+    font-size:.7rem;
     text-align:center;
-    transition:border-color .2s,color .2s;
+    margin-bottom:5px;
   }
   .inv-slot.filled{
     border-color:#5a5a28;
     color:#c8b850;
     background:#0c0c08;
     text-shadow:0 0 4px rgba(200,184,80,.15);
+  }
+
+  /* ═══ CENTER PANEL OVERLAY ═══ */
+  #center-panel-overlay{
+    position:fixed;top:0;left:0;width:100%;height:100%;
+    z-index:180;
+    background:rgba(5,5,4,.7);
+    display:none;
+    justify-content:center;align-items:center;
+  }
+  #center-panel-overlay.open{
+    display:flex;
+  }
+
+  /* ═══ CENTER PANEL ═══ */
+  #center-panel{
+    width:500px;max-width:88vw;
+    max-height:70vh;
+    background:#0a0a08;
+    border:2px solid #3a3a20;
+    border-radius:2px;
+    display:flex;flex-direction:column;
+    box-shadow:0 0 40px rgba(0,0,0,.8),0 0 10px rgba(58,58,32,.1);
+    animation:panelOpen .25s ease-out;
+  }
+  @keyframes panelOpen{
+    from{opacity:0;transform:scale(.92)}
+    to{opacity:1;transform:scale(1)}
+  }
+  .cp-header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:10px 14px 8px;
+    border-bottom:2px solid #3a3a20;
+    background:#0e0e0a;
+  }
+  .cp-title{
+    color:#a89040;font-weight:800;font-size:.75rem;letter-spacing:4px;
+    text-shadow:0 0 6px rgba(168,144,64,.25);
+  }
+  .cp-close{
+    color:#5a5a30;font-weight:800;font-size:.85rem;letter-spacing:2px;
+    cursor:pointer;padding:2px 8px;
+    border:1px solid #2a2a18;
+    transition:all .2s;
+    user-select:none;
+  }
+  .cp-close:hover{
+    color:#c8b850;border-color:#a89040;
+    text-shadow:0 0 6px rgba(200,184,80,.3);
+  }
+  .cp-body{
+    flex:1;overflow-y:auto;padding:14px;
+    color:#8a8a60;font-size:.78rem;line-height:1.8;
+    scrollbar-width:thin;scrollbar-color:#2a2a18 #0a0a08;
+  }
+  .cp-body::-webkit-scrollbar{width:4px}
+  .cp-body::-webkit-scrollbar-track{background:#0a0a08}
+  .cp-body::-webkit-scrollbar-thumb{background:#3a3a20;border-radius:2px}
+
+  /* Panel content items */
+  .cp-item{
+    padding:8px 10px;margin-bottom:6px;
+    border:1px solid #222210;
+    background:#080806;
+    color:#8a8a60;
+    font-size:.72rem;letter-spacing:1px;
+  }
+  .cp-item-title{
+    color:#c8b850;font-weight:700;margin-bottom:3px;
+    font-size:.7rem;letter-spacing:2px;
+  }
+  .cp-item-desc{
+    color:#6a6a40;font-size:.65rem;
+  }
+  .cp-empty{
+    color:#3a3a20;text-align:center;padding:30px 0;
+    font-size:.7rem;letter-spacing:2px;
   }
 
   /* ═══ BOTTOM HUD BAR ═══ */
@@ -250,7 +337,7 @@
   /* ═══ ADJUST TERMINAL TO MAKE ROOM ═══ */
   /* Terminal gets a right margin so it does not overlap the sidebar */
   #terminal{
-    flex:1;overflow-y:auto;padding:60px 15% 20px;padding-right:170px;
+    flex:1;overflow-y:auto;padding:60px 15% 20px;padding-right:90px;
     display:none;flex-direction:column;gap:20px;scrollbar-width:none;
   }
   #terminal::-webkit-scrollbar{display:none}
@@ -258,7 +345,7 @@
   /* Bottom bar needs space for the HUD below it */
   #bar{
     height:100px;background:rgba(0,0,0,.92);border-top:1px solid #222;
-    display:none;align-items:center;padding:0 15%;padding-right:170px;flex-shrink:0;
+    display:none;align-items:center;padding:0 15%;padding-right:90px;flex-shrink:0;
     margin-bottom:36px;
   }
 
@@ -512,20 +599,23 @@
 <!-- ═══ GHOST ORB ═══ -->
 <div id="ghost"><div class="eye"></div><div class="eye"></div></div>
 
-<!-- ═══ INVENTORY SIDEBAR ═══ -->
-<div id="inv-panel">
-  <div class="inv-header">INVENTORY</div>
-  <div class="inv-slots">
-    <div class="inv-slot filled">SWORD</div>
-    <div class="inv-slot filled">POTION</div>
-    <div class="inv-slot filled">KEY</div>
-    <div class="inv-slot">EMPTY</div>
-    <div class="inv-slot">EMPTY</div>
-    <div class="inv-slot">EMPTY</div>
-    <div class="inv-slot">EMPTY</div>
-    <div class="inv-slot">EMPTY</div>
-    <div class="inv-slot">EMPTY</div>
-    <div class="inv-slot">EMPTY</div>
+<!-- ═══ RIGHT SIDE BUTTONS ═══ -->
+<div id="side-buttons">
+  <div class="side-btn" id="btn-map">MAP</div>
+  <div class="side-btn" id="btn-item">ITEM</div>
+  <div class="side-btn" id="btn-quest">QUEST</div>
+  <div class="side-btn" id="btn-skill">SKILL</div>
+</div>
+
+<!-- ═══ CENTER PANELS (map / item / quest / skill) ═══ -->
+<div id="center-panel-overlay">
+  <div id="center-panel">
+    <div class="cp-header">
+      <span class="cp-title" id="cp-title">PANEL</span>
+      <span class="cp-close" id="cp-close">X</span>
+    </div>
+    <div class="cp-body" id="cp-body">
+    </div>
   </div>
 </div>
 
@@ -538,13 +628,10 @@
   <input type="text" id="inp" placeholder="Type a command..." autofocus autocomplete="off" spellcheck="false">
 </div>
 
-<!-- ═══ BOTTOM HUD ═══ -->
+<!-- ═══ BOTTOM HUD (level and gold only) ═══ -->
 <div id="hud">
   <div class="hud-item"><span class="hud-label">LVL</span><span class="hud-val" id="hud-lvl">1</span></div>
   <div class="hud-item"><span class="hud-label">GOLD</span><span class="hud-val" id="hud-gold">0</span></div>
-  <div class="hud-item hud-btn" id="hud-map">MAP</div>
-  <div class="hud-item hud-btn" id="hud-quests">QUESTS</div>
-  <div class="hud-item hud-btn" id="hud-skills">SKILLS</div>
 </div>
 
 <!-- ═══ LOAD JS FILES IN ORDER ═══ -->

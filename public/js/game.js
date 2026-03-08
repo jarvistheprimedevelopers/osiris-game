@@ -628,6 +628,35 @@
       done(); return;
     }
 
+    // ── SLEEP AND SAVE ──
+    if (/^(sleep and save|save and sleep|sleep & save)$/i.test(cmd)) {
+      Save.save(gs);
+      await Host.speak("Your eyes grow heavy. The Lattice hums a low lullaby. Your progress has been recorded.");
+      Host.addLine("<span class=\"sys\">[GAME SAVED]</span>");
+      await Host.wait(1000);
+      exitToMenu();
+      return;
+    }
+
+    // ── SAVE (quick save, stay in game) ──
+    if (/^save$/i.test(cmd)) {
+      Save.save(gs);
+      await Host.speak("The Lattice etches your progress into its memory. You are saved.");
+      Host.addLine("<span class=\"sys\">[GAME SAVED]</span>");
+      done(); return;
+    }
+
+    // ── SLEEP (rest + save, stay in game) ──
+    if (/^sleep$/i.test(cmd)) {
+      var h = (scene && scene.restHeal) ? scene.restHeal : 10;
+      healPlayer(h);
+      Save.save(gs);
+      await Host.speak("You close your eyes. The void watches over you. When you wake, you feel restored.");
+      Host.addLine("<span style=\"color:#40aa30\">+" + h + " HP restored. [HP: " + gs.character.hp + "/" + gs.character.maxHp + "]</span>");
+      Host.addLine("<span class=\"sys\">[GAME SAVED]</span>");
+      done(); return;
+    }
+
     // ── UNKNOWN ──
     var unknowns = [
       "The Lattice doesn't understand that action. Type 'help' for commands.",
@@ -642,6 +671,50 @@
   function done() {
     locked = false;
     Host.enableInput();
+  }
+
+  // ════════════════════════════════════════════════════════════
+  //  EXIT TO MENU — saves the game and returns to main menu
+  // ════════════════════════════════════════════════════════════
+  function exitToMenu() {
+    // Save current game state
+    Save.save(gs);
+
+    // Stop idle behavior
+    Host.stopIdleMode();
+    Host.resetIdleTimer();
+
+    // Detach the game input handler so it does not stack
+    if (gameLoopActive) {
+      inpEl.removeEventListener("keydown", onGameInput);
+      gameLoopActive = false;
+    }
+
+    // Lock input
+    locked = true;
+    Host.disableInput();
+
+    // Hide all game UI
+    Host.hideGameUI();
+
+    // Clear the terminal so it is fresh next time
+    var termEl = document.getElementById("terminal");
+    termEl.innerHTML = "";
+
+    // Show the menu again
+    var menuEl = document.getElementById("menu-screen");
+    menuEl.style.display = "flex";
+    menuEl.classList.remove("hidden");
+
+    // Make sure Continue is now enabled (save exists)
+    var contDoor = document.getElementById("door-continue");
+    contDoor.classList.remove("disabled");
+  }
+
+  // ── Wire up the Exit button click ──
+  var exitBtnEl = document.getElementById("exit-btn");
+  if (exitBtnEl) {
+    exitBtnEl.addEventListener("click", exitToMenu);
   }
 
   // ════════════════════════════════════════════════════════════

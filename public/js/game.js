@@ -320,7 +320,7 @@
         gs.inventory.push(drop);
         Host.addLine('<span class="loot">Loot: ' + drop + '</span>');
       }
-      if (enemyId === 'data-wolf') gs.flags.wolfKilled = true;
+      if (enemyId === 'lost shade') gs.flags.shadeKilled = true;
       Save.save(gs);
     } else if (gs.character.hp <= 0) {
       Host.addLine('<span class="err">[SYSTEM]: You collapse. The Lattice catches you.</span>');
@@ -405,12 +405,12 @@
     await Host.wait(400);
 
     // Save
-    gs.world.location = "VOID_LOBBY";
+    gs.world.location = "THRESHOLD";
     gs.world.chapter = 1;
-    gs.quests.push("reach_gatekeeper");
-    gs.summary = gs.character.sex + ", age " + gs.character.age + ", former " + gs.character.lifeRole + ".";
+    gs.quests.push("reach_the_keeper");
+    gs.summary = gs.character.sex + ", age " + gs.character.age + ", former " + gs.character.lifeRole + ". Watcher. The Veil has opened.";
     Save.save(gs);
-    Host.setLocation("VOID_LOBBY");
+    Host.setLocation("THRESHOLD");
 
     // Chapter 1 (personalized intro from story/intro.js)
     var introText = StoryIntro.get(gs.character.lifeRole);
@@ -418,8 +418,8 @@
     await Host.wait(400);
 
     // Quest announcement
-    Host.addLine("<span class=\"action\">[QUEST]: Reach the Gatekeeper</span>");
-    await Host.speak("A quest crystallizes: find the Gatekeeper at the Gate Terminal beyond the Old Market. Reach them. Prove you belong.");
+    Host.addLine("<span class=\"action\">[QUEST]: Reach the Keeper</span>");
+    await Host.speak("A purpose crystallizes in your mind: find the Keeper at the Veil Gate, beyond the Veiled Market. Face the corrupted. Prove you can protect the balance.");
     await Host.wait(300);
     Host.addLine("<span class=\"hint\">(Commands: <b>look</b> . <b>explore</b> . <b>go north</b> . <b>search</b> . <b>attack</b> . <b>rest</b> . <b>inventory</b> . <b>stats</b> . <b>help</b>)</span>");
 
@@ -764,26 +764,26 @@
 
   // ── MAP panel ──────────────────────────────────────────────
   function getMapContent() {
-    return "<div class=\"cp-empty\">--- WORLD MAP ---</div>" +
+    return "<div class=\"cp-empty\">--- THE VEIL ---</div>" +
       "<div class=\"cp-item\">" +
-        "<div class=\"cp-item-title\">VOID LOBBY</div>" +
-        "<div class=\"cp-item-desc\">The entry point. Black glass and blue light.</div>" +
+        "<div class=\"cp-item-title\">THE THRESHOLD</div>" +
+        "<div class=\"cp-item-desc\">The boundary between worlds. Where Watchers begin.</div>" +
       "</div>" +
       "<div class=\"cp-item\">" +
-        "<div class=\"cp-item-title\">NEON DISTRICT</div>" +
-        "<div class=\"cp-item-desc\">Glitching streets. Synth-rain. Data-wolves.</div>" +
+        "<div class=\"cp-item-title\">THE SILENT STREET</div>" +
+        "<div class=\"cp-item-desc\">A city frozen in twilight. Fog that listens.</div>" +
       "</div>" +
       "<div class=\"cp-item\">" +
-        "<div class=\"cp-item-title\">BROKEN ALLEY</div>" +
-        "<div class=\"cp-item-desc\">Narrow. Dark. Pipes and shadows.</div>" +
+        "<div class=\"cp-item-title\">THE HOLLOW CHAPEL</div>" +
+        "<div class=\"cp-item-desc\">Sacred ground. Violet flames. Spirits cannot enter easily.</div>" +
       "</div>" +
       "<div class=\"cp-item\">" +
-        "<div class=\"cp-item-title\">OLD MARKET</div>" +
-        "<div class=\"cp-item-desc\">Abandoned stalls. The Gate Terminal looms.</div>" +
+        "<div class=\"cp-item-title\">THE VEILED MARKET</div>" +
+        "<div class=\"cp-item-desc\">A marketplace between worlds. Faceless vendors. Spirit trade.</div>" +
       "</div>" +
       "<div class=\"cp-item\">" +
-        "<div class=\"cp-item-title\">GATE TERMINAL</div>" +
-        "<div class=\"cp-item-desc\">The Gatekeeper waits. Prove yourself.</div>" +
+        "<div class=\"cp-item-title\">THE VEIL GATE</div>" +
+        "<div class=\"cp-item-desc\">The Keeper guards the passage deeper. Prove yourself.</div>" +
       "</div>";
   }
 

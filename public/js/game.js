@@ -382,107 +382,64 @@
   function closeCredits() { creditsEl.classList.remove('show'); }
 
   // ════════════════════════════════════════════════════════════
-  //  CHARACTER CREATION
+  //  CHARACTER CREATION — driven by Host's cinematic methods
   // ════════════════════════════════════════════════════════════
   async function beginCharacterCreation() {
-    Host.addLine('<b>[SYSTEM INITIALIZED]</b>', 'sys');
+    // OSIRIS introduces himself with full cinematic entrance
+    await Host.bootIntro();
     await Host.wait(500);
-    Host.addLine('<span class="sys">Establishing neural link...</span>');
-    await Host.wait(700);
-    Host.setOrb('thinking');
 
-    await Host.speak("Welcome to the Void. Before we continue, I need to know who stands before me.");
-    await Host.wait(500);
-    Host.setOrb('');
-
-    // Q1: Sex
-    Host.addLine('<span class="sys">— IDENTITY SCAN: PHASE 1 —</span>');
-    await Host.wait(300);
-    await Host.speak("What form do you wear? Male, or female?");
-    var sex = await Host.waitForChoice(['MALE', 'FEMALE']);
-    Host.addLine('> ' + sex, 'usr');
-    gs.character.sex = sex.toLowerCase();
-    await Host.wait(300);
-    await Host.speak(sex === 'MALE'
-      ? "A man, then. The Lattice does not care. But I will remember."
-      : "A woman, then. The Lattice does not care. But I will remember.");
+    // Q1: Sex (Host handles the dialogue and stage actions)
+    gs.character.sex = await Host.askSex();
     await Host.wait(400);
 
     // Q2: Age
-    Host.addLine('<span class="sys">— IDENTITY SCAN: PHASE 2 —</span>');
-    await Host.wait(300);
-    await Host.speak("How many years has the old world carved into you?");
-    var age = await Host.waitForInput('Enter your age...');
-    Host.addLine('> ' + age, 'usr');
-    gs.character.age = age;
-    await Host.wait(300);
-    await Host.speak("Noted. Time is different here. You will feel it soon enough.");
+    gs.character.age = await Host.askAge();
     await Host.wait(400);
 
     // Q3: Life Role
-    Host.addLine('<span class="sys">— IDENTITY SCAN: PHASE 3 —</span>');
-    await Host.wait(300);
-    await Host.speak("Before the Void found you — what were you? What did you do in that old life?");
-    await Host.wait(200);
-    Host.addLine('<span class="hint">(Type anything: student, soldier, thief, mechanic, drifter, plumber, nurse, hunter, cop, chef...)</span>');
-    var lifeRole = await Host.waitForInput('What were you?');
-    Host.addLine('> ' + lifeRole, 'usr');
-    gs.character.lifeRole = lifeRole.toLowerCase().trim();
-    await Host.wait(300);
+    gs.character.lifeRole = await Host.askRole();
 
-    Host.setOrb('thinking');
-    await Host.speak("A " + gs.character.lifeRole + ". Interesting. The Lattice shapes your path from what you were. Let us begin.");
+    // OSIRIS reacts to the role with a personalized cinematic response
+    await Host.respondToRole(gs.character.lifeRole);
     await Host.wait(400);
-    Host.setOrb('');
 
     // Save
-    gs.world.location = 'VOID_LOBBY';
+    gs.world.location = "VOID_LOBBY";
     gs.world.chapter = 1;
-    gs.quests.push('reach_gatekeeper');
-    gs.summary = gs.character.sex + ', age ' + gs.character.age + ', former ' + gs.character.lifeRole + '.';
+    gs.quests.push("reach_gatekeeper");
+    gs.summary = gs.character.sex + ", age " + gs.character.age + ", former " + gs.character.lifeRole + ".";
     Save.save(gs);
-    Host.setLocation('VOID_LOBBY');
+    Host.setLocation("VOID_LOBBY");
 
-    // Chapter 1 (personalized)
-    Host.addLine('<span class="sys">— CHAPTER 1: THE LATTICE AWAITS —</span>');
-    await Host.wait(600);
+    // Chapter 1 (personalized intro from story/intro.js)
     var introText = StoryIntro.get(gs.character.lifeRole);
-    await Host.speak(introText);
+    await Host.beginChapter(1, introText);
     await Host.wait(400);
 
-    // Quest
-    Host.addLine('<span class="action">[QUEST]: Reach the Gatekeeper</span>');
+    // Quest announcement
+    Host.addLine("<span class=\"action\">[QUEST]: Reach the Gatekeeper</span>");
     await Host.speak("A quest crystallizes: find the Gatekeeper at the Gate Terminal beyond the Old Market. Reach them. Prove you belong.");
     await Host.wait(300);
-    Host.addLine('<span class="hint">(Commands: <b>look</b> · <b>explore</b> · <b>go north</b> · <b>search</b> · <b>attack</b> · <b>rest</b> · <b>inventory</b> · <b>stats</b> · <b>help</b>)</span>');
+    Host.addLine("<span class=\"hint\">(Commands: <b>look</b> . <b>explore</b> . <b>go north</b> . <b>search</b> . <b>attack</b> . <b>rest</b> . <b>inventory</b> . <b>stats</b> . <b>help</b>)</span>");
 
     startGameLoop();
   }
 
   // ════════════════════════════════════════════════════════════
-  //  CONTINUE
+  //  CONTINUE — cinematic welcome back
   // ════════════════════════════════════════════════════════════
   async function bootContinue() {
-    Host.addLine('<b>[SYSTEM INITIALIZED]</b>', 'sys');
-    await Host.wait(400);
-    Host.addLine('<span class="sys">Save data found. Restoring...</span>');
-    await Host.wait(600);
-    Host.setOrb('thinking');
-
     var sceneName = SCENES[gs.world.location] ? SCENES[gs.world.location].name : gs.world.location;
-    await Host.speak("You return. The Lattice remembers you, " + gs.character.lifeRole + ". You stand in " + sceneName + ". The hum resumes.");
-    await Host.wait(400);
-    Host.setOrb('');
-
-    Host.addLine('<span style="color:#00f2ff;font-size:.78rem">NEURAL LINK: RESTORED</span>', 'sys');
+    await Host.welcomeBack(gs.character.lifeRole, sceneName);
 
     if (gs.quests.length > 0) {
-      gs.quests.forEach(function (q) {
-        Host.addLine('<span class="action">[ACTIVE QUEST]: ' + q.replace(/_/g, ' ') + '</span>');
+      gs.quests.forEach(function(q) {
+        Host.addLine("<span class=\"action\">[ACTIVE QUEST]: " + q.replace(/_/g, " ") + "</span>");
       });
     }
 
-    Host.addLine('<span class="hint">(Commands: <b>look</b> · <b>explore</b> · <b>go north</b> · <b>search</b> · <b>attack</b> · <b>rest</b> · <b>inventory</b> · <b>stats</b> · <b>help</b>)</span>');
+    Host.addLine("<span class=\"hint\">(Commands: <b>look</b> . <b>explore</b> . <b>go north</b> . <b>search</b> . <b>attack</b> . <b>rest</b> . <b>inventory</b> . <b>stats</b> . <b>help</b>)</span>");
     startGameLoop();
   }
 

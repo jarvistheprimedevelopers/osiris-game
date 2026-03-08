@@ -736,4 +736,145 @@
     closeCredits: closeCredits
   };
 
+  // ════════════════════════════════════════════════════════════
+  //  CENTER PANEL SYSTEM (MAP / ITEM / QUEST / SKILL)
+  //  All four are toggles. Only one open at a time.
+  //  Clicking the same button again closes the panel.
+  // ════════════════════════════════════════════════════════════
+
+  var panelOverlay = document.getElementById("center-panel-overlay");
+  var panelTitle   = document.getElementById("cp-title");
+  var panelBody    = document.getElementById("cp-body");
+  var panelClose   = document.getElementById("cp-close");
+  var currentPanel = null;
+
+  // ── ITEM panel: reads real inventory from game state ────────
+  function getItemContent() {
+    var slots = 4;
+    var html = "";
+    for (var i = 0; i < slots; i++) {
+      if (gs.inventory[i]) {
+        html += "<div class=\"inv-slot filled\">" + gs.inventory[i].toUpperCase() + "</div>";
+      } else {
+        html += "<div class=\"inv-slot\">EMPTY</div>";
+      }
+    }
+    return html;
+  }
+
+  // ── MAP panel ──────────────────────────────────────────────
+  function getMapContent() {
+    return "<div class=\"cp-empty\">--- WORLD MAP ---</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">VOID LOBBY</div>" +
+        "<div class=\"cp-item-desc\">The entry point. Black glass and blue light.</div>" +
+      "</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">NEON DISTRICT</div>" +
+        "<div class=\"cp-item-desc\">Glitching streets. Synth-rain. Data-wolves.</div>" +
+      "</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">BROKEN ALLEY</div>" +
+        "<div class=\"cp-item-desc\">Narrow. Dark. Pipes and shadows.</div>" +
+      "</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">OLD MARKET</div>" +
+        "<div class=\"cp-item-desc\">Abandoned stalls. The Gate Terminal looms.</div>" +
+      "</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">GATE TERMINAL</div>" +
+        "<div class=\"cp-item-desc\">The Gatekeeper waits. Prove yourself.</div>" +
+      "</div>";
+  }
+
+  // ── QUEST panel ────────────────────────────────────────────
+  function getQuestContent() {
+    if (gs.quests.length === 0) {
+      return "<div class=\"cp-empty\">NO ACTIVE QUESTS</div>";
+    }
+    var html = "<div class=\"cp-empty\">--- ACTIVE QUESTS ---</div>";
+    gs.quests.forEach(function(q) {
+      html += "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">" + q.replace(/_/g, " ").toUpperCase() + "</div>" +
+        "<div class=\"cp-item-desc\">In progress.</div>" +
+      "</div>";
+    });
+    return html;
+  }
+
+  // ── SKILL panel ────────────────────────────────────────────
+  function getSkillContent() {
+    return "<div class=\"cp-empty\">--- SKILLS ---</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">COMBAT LV " + gs.character.level + "</div>" +
+        "<div class=\"cp-item-desc\">Base attack damage scales with level.</div>" +
+      "</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">SURVIVAL</div>" +
+        "<div class=\"cp-item-desc\">Rest healing. Locked: future upgrade.</div>" +
+      "</div>" +
+      "<div class=\"cp-item\">" +
+        "<div class=\"cp-item-title\">PERCEPTION</div>" +
+        "<div class=\"cp-item-desc\">Search loot chance. Locked: future upgrade.</div>" +
+      "</div>" +
+      "<div class=\"cp-empty\" style=\"margin-top:10px\">More skills unlock as you level up.</div>";
+  }
+
+  // ── Open / toggle a panel ──────────────────────────────────
+  function openPanel(type) {
+    if (currentPanel === type) {
+      closePanel();
+      return;
+    }
+
+    currentPanel = type;
+
+    // Clear all active states
+    var allBtns = document.querySelectorAll(".side-btn");
+    allBtns.forEach(function(b) { b.classList.remove("active"); });
+
+    // Highlight the clicked button
+    var btnId = { map:"btn-map", item:"btn-item", quest:"btn-quest", skill:"btn-skill" };
+    var activeBtn = document.getElementById(btnId[type]);
+    if (activeBtn) activeBtn.classList.add("active");
+
+    // Set title
+    var titles = { map:"MAP", item:"INVENTORY", quest:"QUESTS", skill:"SKILLS" };
+    panelTitle.textContent = titles[type] || "PANEL";
+
+    // Fill content
+    if (type === "map")        panelBody.innerHTML = getMapContent();
+    else if (type === "item")  panelBody.innerHTML = getItemContent();
+    else if (type === "quest") panelBody.innerHTML = getQuestContent();
+    else if (type === "skill") panelBody.innerHTML = getSkillContent();
+
+    panelOverlay.classList.add("open");
+  }
+
+  // ── Close panel ────────────────────────────────────────────
+  function closePanel() {
+    currentPanel = null;
+    panelOverlay.classList.remove("open");
+    var allBtns = document.querySelectorAll(".side-btn");
+    allBtns.forEach(function(b) { b.classList.remove("active"); });
+  }
+
+  // ── Wire up clicks ─────────────────────────────────────────
+  var btnMap   = document.getElementById("btn-map");
+  var btnItem  = document.getElementById("btn-item");
+  var btnQuest = document.getElementById("btn-quest");
+  var btnSkill = document.getElementById("btn-skill");
+
+  if (btnMap)   btnMap.addEventListener("click", function() { openPanel("map"); });
+  if (btnItem)  btnItem.addEventListener("click", function() { openPanel("item"); });
+  if (btnQuest) btnQuest.addEventListener("click", function() { openPanel("quest"); });
+  if (btnSkill) btnSkill.addEventListener("click", function() { openPanel("skill"); });
+  if (panelClose) panelClose.addEventListener("click", closePanel);
+
+  if (panelOverlay) {
+    panelOverlay.addEventListener("click", function(e) {
+      if (e.target === panelOverlay) closePanel();
+    });
+  }
+
 })();

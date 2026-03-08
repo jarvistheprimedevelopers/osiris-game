@@ -750,6 +750,218 @@
   }
 
   // ════════════════════════════════════════════════════════════
+  //  IDLE BEHAVIOR SYSTEM
+  //  If the player does nothing for 60 seconds, OSIRIS gets
+  //  bored and starts entertaining himself.
+  //
+  //  - idleTimer: counts down to idle mode
+  //  - idleLoop: runs random actions every few seconds
+  //  - resetIdleTimer(): called on every player input
+  //  - stopIdleMode(): snaps OSIRIS back to normal
+  // ════════════════════════════════════════════════════════════
+
+  var IDLE_DELAY = 60000;        // 60 seconds before idle starts
+  var IDLE_ACTION_MIN = 3000;    // minimum ms between idle actions
+  var IDLE_ACTION_MAX = 5000;    // maximum ms between idle actions
+
+  var idleTimerId = null;        // the countdown timer
+  var idleLoopId = null;         // the repeating action loop
+  var isIdle = false;            // is OSIRIS currently idle?
+  var lastIdleActionIndex = -1;  // prevent repeating the same action twice
+
+  // ── Pool of idle actions ───────────────────────────────────
+  // Each action has:
+  //   text: what prints in the terminal
+  //   vfx: a function that runs the visual effect
+  //   css: optional CSS class to temporarily add to #ghost
+
+  var IDLE_ACTIONS = [
+    {
+      text: "[OSIRIS lights a cigar. The ember glows in the dark.]",
+      vfx: function() { vfxEmber(); vfxSmoke(); }
+    },
+    {
+      text: "[OSIRIS flips a coin. It catches light that should not exist, then vanishes.]",
+      vfx: function() { vfxMoodGlow("amused", 2000); },
+      css: "vfx-idle-juggle"
+    },
+    {
+      text: "[OSIRIS juggles a glowing cube of compressed data. It hums.]",
+      css: "vfx-idle-juggle",
+      vfx: function() { vfxMoodGlow("impressed", 2000); }
+    },
+    {
+      text: "[OSIRIS taps the terminal glass. Twice. Testing if anyone is still there.]",
+      css: "vfx-idle-tap",
+      vfx: function() {}
+    },
+    {
+      text: "[OSIRIS glitches briefly. For a moment there are two of him.]",
+      vfx: function() { vfxGlitch(); }
+    },
+    {
+      text: "[OSIRIS spins once in the void. Slowly. Deliberately. As if bored.]",
+      css: "vfx-idle-spin",
+      vfx: function() {}
+    },
+    {
+      text: "[OSIRIS slow-claps. The sound echoes and fades into nothing.]",
+      vfx: function() { vfxMoodGlow("amused", 1500); }
+    },
+    {
+      text: "[OSIRIS floats upside down. The cigar does not fall. Physics does not apply here.]",
+      css: "vfx-idle-flip",
+      vfx: function() {}
+    },
+    {
+      text: "[OSIRIS draws his sword, inspects the blade, then sheathes it.]",
+      vfx: function() { vfxSwordFlash(); vfxMoodGlow("danger", 2000); }
+    },
+    {
+      text: "[OSIRIS leans close to the terminal. Inspecting. Judging.]",
+      vfx: function() { vfxApproach(2500); }
+    },
+    {
+      text: "[OSIRIS kicks the screen lightly. The terminal flickers.]",
+      css: "vfx-idle-kick",
+      vfx: function() { vfxScreenShake(); }
+    },
+    {
+      text: "[OSIRIS blows smoke rings. They drift across the void in perfect circles.]",
+      vfx: function() { vfxSmoke(); vfxSmoke(); }
+    },
+    {
+      text: "[OSIRIS snaps his fingers. A spark of light appears and dies.]",
+      vfx: function() { vfxEmber(); }
+    },
+    {
+      text: "[OSIRIS hums a melody. Low. Ancient. It makes the air heavier.]",
+      vfx: function() { vfxMoodGlow("calm", 2500); }
+    },
+    {
+      text: "[OSIRIS examines his hand. Opens it. Closes it. As if remembering what flesh felt like.]",
+      vfx: function() { vfxMoodGlow("impressed", 2000); }
+    },
+    {
+      text: "[OSIRIS cracks his neck. The sound echoes wrong, like static.]",
+      vfx: function() { vfxGlitch(); }
+    },
+    {
+      text: "[OSIRIS balances the sword on one finger. It does not wobble.]",
+      vfx: function() { vfxSwordFlash(); },
+      css: "vfx-idle-juggle"
+    },
+    {
+      text: "[OSIRIS traces a symbol in the air. It glows briefly, then shatters.]",
+      vfx: function() { vfxMoodGlow("impressed", 2000); vfxEmber(); }
+    },
+    {
+      text: "[OSIRIS stares directly at you. Waiting. The silence is intentional.]",
+      vfx: function() { vfxApproach(3000); vfxMoodGlow("danger", 3000); }
+    },
+    {
+      text: "[OSIRIS yawns. The void shudders.]",
+      vfx: function() { vfxScreenShake(); vfxMoodGlow("amused", 2000); }
+    }
+  ];
+
+  // ── Start idle mode ────────────────────────────────────────
+  function startIdleMode() {
+    if (isIdle) return;
+    isIdle = true;
+
+    // Announce boredom
+    addLine("<span class=\"action\">[OSIRIS grows impatient. He begins to drift.]</span>");
+
+    // Start the floating side-to-side animation
+    ghostEl.classList.add("vfx-idle-drift");
+
+    // Start the action loop
+    runIdleAction();
+  }
+
+  // ── Run one random idle action, then schedule the next ─────
+  function runIdleAction() {
+    if (!isIdle) return;
+
+    // Pick a random action that is different from the last one
+    var index;
+    var attempts = 0;
+    do {
+      index = Math.floor(Math.random() * IDLE_ACTIONS.length);
+      attempts++;
+    } while (index === lastIdleActionIndex && attempts < 5);
+    lastIdleActionIndex = index;
+
+    var action = IDLE_ACTIONS[index];
+
+    // Print the text
+    addLine("<span class=\"action\">" + action.text + "</span>");
+
+    // Run the visual effect
+    if (action.vfx) action.vfx();
+
+    // Apply temporary CSS class if any
+    if (action.css) {
+      ghostEl.classList.add(action.css);
+      setTimeout(function() {
+        ghostEl.classList.remove(action.css);
+      }, 2000);
+    }
+
+    // Schedule the next action (random delay between min and max)
+    var nextDelay = IDLE_ACTION_MIN + Math.random() * (IDLE_ACTION_MAX - IDLE_ACTION_MIN);
+    idleLoopId = setTimeout(runIdleAction, nextDelay);
+  }
+
+  // ── Stop idle mode ─────────────────────────────────────────
+  function stopIdleMode() {
+    if (!isIdle) return;
+    isIdle = false;
+
+    // Stop the action loop
+    if (idleLoopId) {
+      clearTimeout(idleLoopId);
+      idleLoopId = null;
+    }
+
+    // Remove drift and any idle CSS classes
+    ghostEl.classList.remove("vfx-idle-drift");
+    ghostEl.classList.remove("vfx-idle-spin");
+    ghostEl.classList.remove("vfx-idle-flip");
+    ghostEl.classList.remove("vfx-idle-tap");
+    ghostEl.classList.remove("vfx-idle-juggle");
+    ghostEl.classList.remove("vfx-idle-kick");
+
+    // Restore normal position
+    ghostEl.style.top = "";
+    ghostEl.style.right = "";
+
+    // Announce return
+    addLine("<span class=\"action\">[OSIRIS straightens. He was watching all along.]</span>");
+  }
+
+  // ── Reset idle timer (called on every player input) ────────
+  function resetIdleTimer() {
+    // If currently idle, stop it
+    if (isIdle) stopIdleMode();
+
+    // Clear any existing countdown
+    if (idleTimerId) {
+      clearTimeout(idleTimerId);
+      idleTimerId = null;
+    }
+
+    // Start a new countdown
+    idleTimerId = setTimeout(startIdleMode, IDLE_DELAY);
+  }
+
+  // ── Start the timer on page load ───────────────────────────
+  // This starts counting as soon as the game UI appears.
+  // It gets reset every time the player types.
+  resetIdleTimer();
+
+  // ════════════════════════════════════════════════════════════
   //  EXPOSE GLOBALLY
   // ════════════════════════════════════════════════════════════
 
@@ -781,6 +993,10 @@
     enableInput: enableInput,
     disableInput: disableInput,
     wait: wait,
+    // Idle system
+    resetIdleTimer: resetIdleTimer,
+    startIdleMode: startIdleMode,
+    stopIdleMode: stopIdleMode,
     // VFX exposed for game.js to use directly if needed
     vfx: {
       smoke: vfxSmoke,

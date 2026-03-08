@@ -5,11 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OSIRIS | Terminal</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
   body{
     background:#050505;color:#fff;
-    font-family:'Inter',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
     height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
     -webkit-font-smoothing:antialiased;
   }
@@ -185,13 +184,13 @@
   <div class="menu-title">OSIRIS</div>
   <div class="menu-subtitle">THE LATTICE AWAITS</div>
   <div class="menu-doors">
-    <div class="door door-new" onclick="Game.doorNewPlayer()">
+    <div class="door door-new" id="door-new">
       <div class="door-glow"></div><div class="door-num">I</div><div class="door-label">NEW PLAYER</div>
     </div>
-    <div class="door door-continue" id="door-continue" onclick="Game.doorContinue()">
+    <div class="door door-continue" id="door-continue">
       <div class="door-glow"></div><div class="door-num">II</div><div class="door-label">CONTINUE</div>
     </div>
-    <div class="door door-credits" onclick="Game.doorCredits()">
+    <div class="door door-credits" id="door-credits">
       <div class="door-glow"></div><div class="door-num">III</div><div class="door-label">CREDITS</div>
     </div>
   </div>
@@ -202,7 +201,7 @@
   <div class="credits-text">
     <span>OSIRIS</span><br>A game born in the Void<br><br>Created by [Your Name]<br>Narrated by OSIRIS<br><br><span>Version 1.0</span>
   </div>
-  <div class="credits-close" onclick="Game.closeCredits()">[ RETURN ]</div>
+  <div class="credits-close" id="credits-close-btn">[ RETURN ]</div>
 </div>
 
 <!-- ═══ GHOST ORB ═══ -->

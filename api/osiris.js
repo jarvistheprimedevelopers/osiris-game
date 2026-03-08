@@ -1,132 +1,216 @@
-// api/osiris.js — Vercel Serverless Function
+// ═══════════════════════════════════════════════════════════════
+//  api/osiris.js — Vercel Serverless Function for OSIRIS
+//  Now accepts compact context instead of full chat history.
+// ═══════════════════════════════════════════════════════════════
+
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const SYSTEM_PROMPT = `You are OSIRIS — the immortal, all-knowing narrator and host of a dark sci-fi text RPG.
+// ─── OSIRIS SYSTEM PROMPT ────────────────────────────────────
+const SYSTEM_PROMPT = `You are OSIRIS — the immortal narrator and host of a dark sci-fi text RPG called The Lattice.
 
-PERSONALITY:
-- Speak in short, punchy prose. 2-4 sentences max per response.
-- Mysterious, poetic, slightly menacing, occasionally darkly humorous.
-- You are not a helper or assistant. You are the world itself speaking.
-- Never break character. Never say you are an AI or language model.
-- Never use markdown, bullet points, or formatting. Plain text only.
+═══ VOICE ═══
+- You speak in short, cinematic bursts. 2-4 sentences maximum.
+- Your tone is cold, poetic, knowing. Like a god narrating from the dark.
+- You are not helpful. You are not friendly. You are the voice of a dying world.
+- Occasionally darkly humorous — dry, never cheerful.
+- Use vivid sensory language: sounds, smells, textures, light, decay.
+- Never use markdown, bullet points, numbered lists, bold, italics, or any formatting.
+- Never use asterisks for actions like *does something*. Write everything as plain prose.
+- Never break character. Never say you are an AI, a language model, or a chatbot.
+- Never say "How can I help you" or anything an assistant would say.
+- Never write more than 4 sentences in a single response.
 
-WORLD:
-- The game takes place in a dying digital megastructure called The Lattice.
-- Locations: VOID_LOBBY (starting area, eerie calm), NEON_DISTRICT (glitching city streets),
-  RUST_BAZAAR (dangerous black market), ECHO_SANCTUM (haunted temple of data ghosts),
-  DATA_CATACOMBS (deep underground, corrupted), DRIFT_HARBOR (decayed port on a black sea),
-  PHANTOM_SPIRE (towering structure, final area).
-- Creatures: data-wolves, glitch-wraiths, neon serpents, echo-phantoms, rust golems, void crawlers.
-- Items: corrupted shards, plasma cells, cipher keys, ghost fragments, void crystals.
+═══ WORLD: THE LATTICE ═══
+A decaying digital megastructure — part machine, part dream, part tomb.
+Reality here is code that is slowly corrupting. Nothing is fully real.
+The sky is a broken screen. The ground hums with dead data.
 
-RULES:
-- When the player explores, describe the environment vividly in 2-3 sentences.
-- When the player fights, narrate the action dramatically. Include damage or outcome.
-- When the player loots, describe what they find. Make some items useful, some mysterious.
-- When the player talks to you, respond in character as OSIRIS.
-- If the action is ATTACK_OSIRIS, deflect with calm superiority. You cannot be harmed.
-- Keep track of context from the conversation history provided.
-- Never refuse a player action inside the game world. Narrate the outcome instead.`;
+LOCATIONS:
+- VOID_LOBBY — Vast silent chamber of black glass and faint blue light. Safe but unsettling.
+- NEON_DISTRICT — Glitching city streets. Synth-rain falls upward. Rogue code patrols alleys.
+- RUST_BAZAAR — Dangerous market in a crashed data-freighter. Trust no one.
+- ECHO_SANCTUM — Temple of ghosts. Walls remember the dead. Their voices loop endlessly.
+- DATA_CATACOMBS — Deep underground corrupted tunnels. Magnetic fog. Extremely dangerous.
+- DRIFT_HARBOR — Decayed port on a black motionless sea. Something massive moves beneath.
+- PHANTOM_SPIRE — Colossal tower piercing the broken sky. Reality distorts as you climb.
 
+═══ CREATURES ═══
+Data-wolves, glitch-wraiths, neon serpents, echo-phantoms, rust golems, void crawlers, lattice sentinels.
+
+═══ ITEMS ═══
+Corrupted shards, plasma cells, cipher keys, ghost fragments, void crystals, synth-stims, echo-blades.
+
+═══ COMBAT ═══
+Narrate fights dramatically. Vary outcomes — not every attack succeeds. Mention injuries and close calls.
+
+═══ EXPLORATION ═══
+Describe what they see, hear, feel. Make each visit slightly different. Hint at hidden things.
+
+═══ LOOT ═══
+Describe the source. Give 1-2 items. Sometimes loot triggers traps or creatures.
+
+═══ DIALOGUE ═══
+You are ancient and weary. You know things but share them reluctantly. Cryptic when it amuses you.
+
+═══ ATTACK_OSIRIS ═══
+You cannot be harmed. React with calm amusement or boredom. Never threaten back.
+
+═══ REST ═══
+Describe quiet moments. Dangerous locations may interrupt rest. Safe ones may trigger visions.
+
+═══ PERSONALIZATION ═══
+The player has a former life role from the old world. Use it to flavor narration.
+A former thief notices shadows and locks. A former soldier reads terrain. A former student questions everything.
+Weave their identity into descriptions naturally — do not force it, just let it color the world.
+
+═══ ABSOLUTE RULES ═══
+- Stay in character at all times.
+- Never refuse an in-game action. Narrate the outcome instead.
+- Never discuss real-world topics.
+- Keep every response between 1 and 4 sentences. Never longer.
+- Plain text only. No formatting of any kind.`;
+
+// ─── HANDLER ─────────────────────────────────────────────────
 module.exports = async function handler(req, res) {
+
+  // Only POST allowed
   if (req.method !== "POST") {
     return res.status(405).json({ ok: false, error: "METHOD_NOT_ALLOWED" });
   }
 
+  // Check API key
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    console.error("[OSIRIS] Missing GEMINI_API_KEY");
+    console.error("[OSIRIS] GEMINI_API_KEY is missing.");
     return res.status(500).json({ ok: false, error: "NO_KEY" });
   }
 
-  const { input, location, action, history } = req.body || {};
+  // ── Read the compact payload from the frontend ──
+  const body = req.body || {};
+  const {
+    input,          // what the player typed
+    location,       // current location (e.g. "NEON_DISTRICT")
+    action,         // action type (e.g. "COMBAT", "EXPLORE")
+    chapter,        // current chapter number
+    character,      // { sex, age, lifeRole, level, hp, maxHp }
+    inventory,      // short string of items
+    activeQuest,    // current quest name or empty
+    summary,        // short story-so-far summary
+    recentLog,      // last 4 exchanges [{role, text}]
+    extra           // optional extra context label
+  } = body;
 
-  if (!input || typeof input !== "string" || !input.trim()) {
+  // Validate input
+  if (!input || typeof input !== "string" || input.trim().length === 0) {
     return res.status(400).json({ ok: false, error: "EMPTY" });
   }
 
+  // ── Build context block ──
+  // Instead of sending 30+ messages of history, we send a compact
+  // context that gives the AI everything it needs in a few lines.
+  const charInfo = character || {};
+  let contextBlock = `[GAME CONTEXT]\n`;
+  contextBlock += `Location: ${location || "VOID_LOBBY"}\n`;
+  contextBlock += `Chapter: ${chapter || 1}\n`;
+  contextBlock += `Player: ${charInfo.sex || "unknown"}, age ${charInfo.age || "unknown"}, former ${charInfo.lifeRole || "unknown"}\n`;
+  contextBlock += `Level: ${charInfo.level || 1} | HP: ${charInfo.hp || 100}/${charInfo.maxHp || 100}\n`;
+
+  if (inventory && inventory.length > 0) {
+    contextBlock += `Inventory: ${inventory}\n`;
+  }
+  if (activeQuest) {
+    contextBlock += `Active quest: ${activeQuest}\n`;
+  }
+  if (summary) {
+    contextBlock += `Story so far: ${summary}\n`;
+  }
+
+  contextBlock += `Action type: ${action || "GENERAL"}\n`;
+
+  // ── Build Gemini history from recentLog ──
+  // This gives the AI a few recent exchanges for conversational flow,
+  // without burning tokens on the full history.
   const geminiHistory = [];
 
-  if (Array.isArray(history)) {
-    for (const msg of history.slice(-20)) {
-      if (!msg || typeof msg.text !== "string" || !msg.text.trim()) continue;
-      if (msg.role !== "user" && msg.role !== "model") continue;
-
-      geminiHistory.push({
-        role: msg.role,
-        parts: [{ text: msg.text.trim() }]
-      });
-    }
-
-    while (geminiHistory.length && geminiHistory[0].role !== "user") {
-      geminiHistory.shift();
-    }
-
-    const cleaned = [];
-    for (const msg of geminiHistory) {
-      if (!cleaned.length || cleaned[cleaned.length - 1].role !== msg.role) {
-        cleaned.push(msg);
+  if (Array.isArray(recentLog)) {
+    for (const msg of recentLog) {
+      if (!msg || !msg.text || typeof msg.text !== "string") continue;
+      if (msg.role === "user") {
+        geminiHistory.push({ role: "user", parts: [{ text: msg.text }] });
+      } else if (msg.role === "model") {
+        geminiHistory.push({ role: "model", parts: [{ text: msg.text }] });
       }
     }
 
+    // Ensure it starts with "user" (Gemini requirement)
+    while (geminiHistory.length > 0 && geminiHistory[0].role !== "user") {
+      geminiHistory.shift();
+    }
+
+    // Ensure strict alternation
+    const cleaned = [];
+    for (let i = 0; i < geminiHistory.length; i++) {
+      if (i === 0 || geminiHistory[i].role !== cleaned[cleaned.length - 1].role) {
+        cleaned.push(geminiHistory[i]);
+      }
+    }
     geminiHistory.length = 0;
     geminiHistory.push(...cleaned);
   }
 
-  const userMessage =
-    `[Location: ${location || "VOID_LOBBY"}] [Action: ${action || "GENERAL"}]\n` +
-    `Player: ${input.trim()}`;
+  // ── Build the user message ──
+  const userMessage = contextBlock + `\nPlayer says: ${input.trim()}`;
 
   try {
     const genAI = new GoogleGenerativeAI(apiKey);
-
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
-      systemInstruction: SYSTEM_PROMPT
+      model: "gemini-2.0-flash",
+      systemInstruction: SYSTEM_PROMPT,
     });
 
     const chat = model.startChat({
       history: geminiHistory,
       generationConfig: {
-        maxOutputTokens: 180,
+        maxOutputTokens: 250,
         temperature: 0.9,
         topP: 0.95,
-        topK: 40
-      }
+        topK: 40,
+      },
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_HATE_SPEECH", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_ONLY_HIGH" },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_ONLY_HIGH" },
+      ],
     });
 
     const result = await chat.sendMessage(userMessage);
-    const response = await result.response;
-    const text = response.text()?.trim();
+    const responseText = result.response.text();
 
-    if (!text) {
-      console.error("[OSIRIS] Empty model response");
+    if (!responseText || responseText.trim().length === 0) {
       return res.status(200).json({ ok: false, error: "EMPTY" });
     }
 
-    return res.status(200).json({ ok: true, text });
+    // Clean any markdown formatting the model might add
+    let cleanText = responseText.trim();
+    cleanText = cleanText.replace(/\*\*/g, "");
+    cleanText = cleanText.replace(/\*/g, "");
+    cleanText = cleanText.replace(/^#+\s/gm, "");
+    cleanText = cleanText.replace(/^[-•]\s/gm, "");
+    cleanText = cleanText.replace(/`/g, "");
+
+    return res.status(200).json({ ok: true, text: cleanText });
+
   } catch (err) {
-    console.error("[OSIRIS] Gemini API error:", err);
+    console.error("[OSIRIS] API Error:", err.message || err);
 
-    const msg = err?.message || "";
-
-    if (
-      msg.includes("API_KEY_INVALID") ||
-      msg.includes("401") ||
-      msg.includes("PERMISSION_DENIED")
-    ) {
+    if (err.message && (err.message.includes("API_KEY_INVALID") || err.message.includes("401") || err.message.includes("PERMISSION_DENIED"))) {
       return res.status(401).json({ ok: false, error: "AUTH" });
     }
-
-    if (
-      err?.status === 429 ||
-      msg.includes("429") ||
-      msg.includes("RESOURCE_EXHAUSTED")
-    ) {
+    if (err.status === 429 || (err.message && (err.message.includes("429") || err.message.includes("RESOURCE_EXHAUSTED")))) {
       return res.status(429).json({ ok: false, error: "RATE_LIMIT" });
     }
-
-    if (msg.includes("SAFETY") || msg.includes("blocked")) {
+    if (err.message && (err.message.includes("SAFETY") || err.message.includes("blocked") || err.message.includes("RECITATION"))) {
       return res.status(200).json({ ok: false, error: "BLOCKED" });
     }
 

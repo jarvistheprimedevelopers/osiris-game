@@ -6,12 +6,7 @@
 <title>OSIRIS | Terminal</title>
 <style>
   *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
-  body{
-    background:#050505;color:#fff;
-    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
-    height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
-    -webkit-font-smoothing:antialiased;
-  }
+  /* body styles defined in retro section below */
 
   /* ═══ GHOST ORB ═══ */
   #ghost{
@@ -66,48 +61,48 @@
 
   .menu-title{
     font-size:4rem;font-weight:800;letter-spacing:12px;
-    background:linear-gradient(90deg,#00f2ff,#ff00ff);
-    -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-    background-clip:text;margin-bottom:10px;user-select:none;
+    color:#c8b850;
+    text-shadow:0 0 20px rgba(200,184,80,.2),0 0 40px rgba(200,184,80,.08);
+    margin-bottom:10px;user-select:none;
     animation:menuPulse 3s ease-in-out infinite;
   }
-  @keyframes menuPulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.85;filter:brightness(1.2)}}
-  .menu-subtitle{color:#333;font-size:.85rem;letter-spacing:6px;margin-bottom:60px;user-select:none}
+  @keyframes menuPulse{0%,100%{opacity:1;filter:brightness(1)}50%{opacity:.85;filter:brightness(1.15)}}
+  .menu-subtitle{color:#3a3a20;font-size:.85rem;letter-spacing:6px;margin-bottom:60px;user-select:none}
   .menu-doors{display:flex;gap:30px;flex-wrap:wrap;justify-content:center}
 
   .door{
-    width:180px;height:240px;border:1px solid #1a1a1a;
-    background:linear-gradient(180deg,#0a0a0a,#111);border-radius:8px;
+    width:180px;height:240px;border:2px solid #2a2a18;
+    background:linear-gradient(180deg,#0a0a08,#0e0e0a);border-radius:3px;
     display:flex;flex-direction:column;justify-content:flex-end;align-items:center;
     padding-bottom:28px;cursor:pointer;position:relative;overflow:hidden;transition:all .35s ease;
   }
-  .door:hover{border-color:#00f2ff;box-shadow:0 0 30px rgba(0,242,255,.15);transform:translateY(-4px)}
+  .door:hover{border-color:#a89040;box-shadow:0 0 20px rgba(168,144,64,.1);transform:translateY(-4px)}
   .door:active{transform:translateY(0)}
   .door-glow{
     position:absolute;top:30%;left:50%;transform:translate(-50%,-50%);
     width:50px;height:50px;border-radius:50%;filter:blur(25px);opacity:.3;transition:opacity .35s;
   }
   .door:hover .door-glow{opacity:.6}
-  .door-label{font-size:.85rem;font-weight:600;letter-spacing:3px;color:#555;transition:color .35s;position:relative;z-index:1}
-  .door:hover .door-label{color:#fff}
-  .door-num{font-size:2.5rem;font-weight:800;color:#111;margin-bottom:14px;transition:color .35s;position:relative;z-index:1}
-  .door:hover .door-num{color:#222}
+  .door-label{font-size:.85rem;font-weight:600;letter-spacing:3px;color:#5a5a30;transition:color .35s;position:relative;z-index:1}
+  .door:hover .door-label{color:#d0c8a0}
+  .door-num{font-size:2.5rem;font-weight:800;color:#1a1a10;margin-bottom:14px;transition:color .35s;position:relative;z-index:1}
+  .door:hover .door-num{color:#3a3a20}
   .door.disabled{opacity:.25;cursor:not-allowed}
-  .door.disabled:hover{border-color:#1a1a1a;box-shadow:none;transform:none}
-  .door-new .door-glow{background:#00f2ff}
-  .door-continue .door-glow{background:#ff9900}
-  .door-credits .door-glow{background:#ff00ff}
+  .door.disabled:hover{border-color:#2a2a18;box-shadow:none;transform:none}
+  .door-new .door-glow{background:#c8b850}
+  .door-continue .door-glow{background:#a89040}
+  .door-credits .door-glow{background:#8a7030}
 
   /* ═══ CREDITS ═══ */
   #credits-overlay{
     position:fixed;top:0;left:0;width:100%;height:100%;z-index:250;
-    background:rgba(5,5,5,.95);display:none;justify-content:center;align-items:center;flex-direction:column;
+    background:rgba(5,5,4,.96);display:none;justify-content:center;align-items:center;flex-direction:column;
   }
   #credits-overlay.show{display:flex}
-  .credits-text{color:#444;font-size:1rem;line-height:2.2;text-align:center;letter-spacing:2px}
-  .credits-text span{color:#00f2ff}
-  .credits-close{margin-top:40px;color:#333;font-size:.75rem;letter-spacing:4px;cursor:pointer;transition:color .3s}
-  .credits-close:hover{color:#fff}
+  .credits-text{color:#5a5a30;font-size:1rem;line-height:2.2;text-align:center;letter-spacing:2px}
+  .credits-text span{color:#c8b850}
+  .credits-close{margin-top:40px;color:#3a3a20;font-size:.75rem;letter-spacing:4px;cursor:pointer;transition:color .3s}
+  .credits-close:hover{color:#c8b850}
 
   /* ═══ TERMINAL ═══ */
   #terminal{
@@ -151,29 +146,144 @@
   #inp::placeholder{color:#2a2a2a}
   #inp:disabled{opacity:.35}
 
+  /* responsive rules moved to retro section */
+
+  /* ═══ RETRO INVENTORY SIDEBAR ═══ */
+  #inv-panel{
+    position:fixed;top:10px;right:10px;bottom:120px;
+    width:140px;z-index:80;
+    background:#0a0a08;
+    border:2px solid #3a3a20;
+    border-radius:2px;
+    display:none;flex-direction:column;
+    font-size:.72rem;
+    box-shadow:inset 0 0 20px rgba(0,0,0,.8),0 0 8px rgba(58,58,32,.15);
+  }
+  .inv-header{
+    text-align:center;padding:8px 0 6px;
+    color:#a89040;letter-spacing:3px;font-weight:800;font-size:.68rem;
+    border-bottom:2px solid #3a3a20;
+    background:#0e0e0a;
+    text-shadow:0 0 6px rgba(168,144,64,.25);
+  }
+  .inv-slots{
+    flex:1;overflow-y:auto;padding:6px;
+    display:flex;flex-direction:column;gap:4px;
+    scrollbar-width:thin;scrollbar-color:#2a2a18 #0a0a08;
+  }
+  .inv-slots::-webkit-scrollbar{width:4px}
+  .inv-slots::-webkit-scrollbar-track{background:#0a0a08}
+  .inv-slots::-webkit-scrollbar-thumb{background:#3a3a20;border-radius:2px}
+  .inv-slot{
+    padding:6px 8px;
+    border:1px solid #222210;
+    background:#080806;
+    color:#4a4a30;
+    letter-spacing:1px;
+    font-family:inherit;font-size:.65rem;
+    text-align:center;
+    transition:border-color .2s,color .2s;
+  }
+  .inv-slot.filled{
+    border-color:#5a5a28;
+    color:#c8b850;
+    background:#0c0c08;
+    text-shadow:0 0 4px rgba(200,184,80,.15);
+  }
+
+  /* ═══ BOTTOM HUD BAR ═══ */
+  #hud{
+    position:fixed;bottom:0;left:0;right:0;height:36px;
+    z-index:80;
+    background:#0a0a08;
+    border-top:2px solid #3a3a20;
+    display:none;align-items:center;justify-content:center;
+    gap:0;
+    font-size:.62rem;letter-spacing:2px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.6);
+  }
+  .hud-item{
+    padding:0 16px;height:100%;
+    display:flex;align-items:center;gap:6px;
+    border-right:1px solid #2a2a18;
+    color:#6a6a40;
+  }
+  .hud-item:last-child{border-right:none}
+  .hud-label{color:#4a4a28;font-weight:600}
+  .hud-val{color:#c8b850;font-weight:800;text-shadow:0 0 4px rgba(200,184,80,.2)}
+  .hud-btn{
+    color:#5a5a30;cursor:pointer;
+    transition:color .2s,text-shadow .2s;
+    font-weight:600;
+  }
+  .hud-btn:hover{
+    color:#c8b850;
+    text-shadow:0 0 8px rgba(200,184,80,.3);
+  }
+
+  /* ═══ ADJUST TERMINAL TO MAKE ROOM ═══ */
+  /* Terminal gets a right margin so it does not overlap the sidebar */
+  #terminal{
+    flex:1;overflow-y:auto;padding:60px 15% 20px;padding-right:170px;
+    display:none;flex-direction:column;gap:20px;scrollbar-width:none;
+  }
+  #terminal::-webkit-scrollbar{display:none}
+
+  /* Bottom bar needs space for the HUD below it */
+  #bar{
+    height:100px;background:rgba(0,0,0,.92);border-top:1px solid #222;
+    display:none;align-items:center;padding:0 15%;padding-right:170px;flex-shrink:0;
+    margin-bottom:36px;
+  }
+
+  /* ═══ RETRO CRT TINT ═══ */
+  /* Slight amber/green tint to make the whole page feel old-monitor */
+  body{
+    background:#050504;color:#d0c8a0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden;
+    -webkit-font-smoothing:antialiased;
+  }
+  .tag{color:#c8b850;font-weight:600}
+  .typcur{background:#c8b850}
+  #loc{color:#c8b850}
+  #inp{caret-color:#c8b850;color:#d0c8a0}
+  #inp::placeholder{color:#2a2a18}
+  .choice-btn:hover{border-color:#c8b850;color:#c8b850;box-shadow:0 0 10px rgba(200,184,80,.08)}
+  .hint{color:#3a3a20}
+  .sys{color:#4a4a28}
+  .usr{color:#5a5a38}
+  .err{color:#aa3322}
+  .loot{color:#c8b850}
+
+  /* ═══ RESPONSIVE — inventory hides on small screens ═══ */
   @media(max-width:768px){
+    #inv-panel{width:100px;font-size:.6rem}
+    .inv-header{font-size:.58rem;letter-spacing:2px;padding:6px 0 4px}
+    .inv-slot{padding:4px 5px;font-size:.55rem}
+    #terminal{padding-right:120px}
+    #bar{padding-right:120px}
+    .hud-item{padding:0 8px}
+    #hud{font-size:.52rem;letter-spacing:1px}
     .menu-title{font-size:2.4rem;letter-spacing:6px}
     .menu-subtitle{font-size:.65rem;letter-spacing:4px;margin-bottom:40px}
     .door{width:140px;height:190px;padding-bottom:20px}
     .door-num{font-size:2rem;margin-bottom:10px}
     .door-label{font-size:.7rem;letter-spacing:2px}
     .menu-doors{gap:16px}
-    #terminal{padding:35px 5% 12px}
-    #bar{padding:0 5%;height:75px}
+    #terminal{padding-top:35px;padding-left:5%;padding-bottom:12px}
+    #bar{padding-left:5%;height:75px}
     #loc{letter-spacing:2px;font-size:.68rem;margin-right:14px}
     #inp{font-size:1rem}
     .line{font-size:1.02rem}
     #ghost{width:58px;height:58px;top:6%;right:4%}
     .eye{width:7px;height:7px;margin:3px}
   }
-  @media(max-width:400px){
-    #terminal{padding:25px 4% 10px}
-    #bar{padding:0 4%;height:65px}
-    #loc{font-size:.6rem;letter-spacing:1.5px;margin-right:10px}
-    .line{font-size:.95rem}
-    .menu-title{font-size:1.8rem;letter-spacing:4px}
-    .door{width:120px;height:160px}
-    .door-num{font-size:1.5rem}
+  @media(max-width:480px){
+    /* Hide sidebar on very small screens, show HUD only */
+    #inv-panel{display:none!important}
+    #terminal{padding-right:15%}
+    #bar{padding-right:15%}
   }
 
   /* ═══ OSIRIS VISUAL EFFECTS ═══ */
@@ -373,6 +483,23 @@
 <!-- ═══ GHOST ORB ═══ -->
 <div id="ghost"><div class="eye"></div><div class="eye"></div></div>
 
+<!-- ═══ INVENTORY SIDEBAR ═══ -->
+<div id="inv-panel">
+  <div class="inv-header">INVENTORY</div>
+  <div class="inv-slots">
+    <div class="inv-slot filled">SWORD</div>
+    <div class="inv-slot filled">POTION</div>
+    <div class="inv-slot filled">KEY</div>
+    <div class="inv-slot">EMPTY</div>
+    <div class="inv-slot">EMPTY</div>
+    <div class="inv-slot">EMPTY</div>
+    <div class="inv-slot">EMPTY</div>
+    <div class="inv-slot">EMPTY</div>
+    <div class="inv-slot">EMPTY</div>
+    <div class="inv-slot">EMPTY</div>
+  </div>
+</div>
+
 <!-- ═══ TERMINAL ═══ -->
 <div id="terminal"></div>
 
@@ -380,6 +507,15 @@
 <div id="bar">
   <div id="loc">VOID_LOBBY</div>
   <input type="text" id="inp" placeholder="Type a command..." autofocus autocomplete="off" spellcheck="false">
+</div>
+
+<!-- ═══ BOTTOM HUD ═══ -->
+<div id="hud">
+  <div class="hud-item"><span class="hud-label">LVL</span><span class="hud-val" id="hud-lvl">1</span></div>
+  <div class="hud-item"><span class="hud-label">GOLD</span><span class="hud-val" id="hud-gold">0</span></div>
+  <div class="hud-item hud-btn" id="hud-map">MAP</div>
+  <div class="hud-item hud-btn" id="hud-quests">QUESTS</div>
+  <div class="hud-item hud-btn" id="hud-skills">SKILLS</div>
 </div>
 
 <!-- ═══ LOAD JS FILES IN ORDER ═══ -->

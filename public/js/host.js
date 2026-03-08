@@ -337,11 +337,10 @@
   // ════════════════════════════════════════════════════════════
 
   async function speak(text) {
-    // Random chance of a cinematic stage action before speaking
+    // Random chance of a visual reaction before speaking (no text)
     if (Math.random() < STAGE_ACTION_CHANCE) {
       var action = pick(STAGE_ACTIONS[currentMood] || STAGE_ACTIONS.calm);
-      addLine("<span class=\"action\">" + action + "</span>");
-      // Trigger matching visual effect for this action
+      // Only trigger the visual effect, do NOT print the bracket text
       triggerVisualForAction(action);
       await wait(600);
     }
@@ -357,8 +356,7 @@
 
   function react() {
     var action = pick(STAGE_ACTIONS[currentMood] || STAGE_ACTIONS.calm);
-    addLine("<span class=\"action\">" + action + "</span>");
-    // Trigger matching visual effect
+    // Only trigger visual effect, no terminal text
     triggerVisualForAction(action);
   }
 
@@ -506,16 +504,16 @@
     await wait(700);
     setOrb("thinking");
 
-    addLine("<span class=\"action\">[The void stirs. A point of light appears in the darkness.]</span>");
+    // Visual: calm glow appears
     vfxMoodGlow("calm", 5000);
     await wait(800);
 
-    addLine("<span class=\"action\">[A thin flame. A cigar. A silhouette takes shape.]</span>");
+    // Visual: cigar ember and smoke
     vfxEmber();
     vfxSmoke();
     await wait(700);
 
-    addLine("<span class=\"action\">[OSIRIS steps forward. Eyes like cold starlight.]</span>");
+    // Visual: OSIRIS approaches
     vfxApproach(3000);
     await wait(600);
 
@@ -525,7 +523,6 @@
     await wait(300);
     setOrb("");
 
-    // Start ambient breathing after intro
     vfxAmbientStart();
   }
 
@@ -541,7 +538,7 @@
     addLine("> " + sex, "usr");
     await wait(300);
 
-    addLine("<span class=\"action\">[OSIRIS exhales smoke. It forms the shape of the answer before dissolving.]</span>");
+    // Visual only: smoke effect
     vfxSmoke();
     await wait(400);
 
@@ -561,7 +558,7 @@
     addLine("> " + age, "usr");
     await wait(300);
 
-    addLine("<span class=\"action\">[OSIRIS taps the cigar. Ash falls into the void like gray snow.]</span>");
+    // Visual only: ember glow
     vfxEmber();
     await wait(400);
     await speak("Noted. Time is different here. You will feel it soon enough.");
@@ -583,7 +580,7 @@
     await wait(300);
     setOrb("thinking");
 
-    addLine("<span class=\"action\">[OSIRIS pauses. The cigar lowers. He studies you.]</span>");
+    // Visual only: approach
     vfxApproach(3000);
     await wait(500);
 
@@ -622,7 +619,7 @@
     await speak(response);
     await wait(300);
 
-    addLine("<span class=\"action\">[OSIRIS slides the cigar back between his teeth. The flame steadies.]</span>");
+    // Visual only: ember
     vfxEmber();
     await wait(400);
     await speak("The Lattice will shape your path from what you were. Let us begin.");
@@ -637,12 +634,12 @@
     addLine("<span class=\"sys\">--- CHAPTER " + chapterNum + ": THE LATTICE AWAITS ---</span>");
     await wait(600);
 
-    addLine("<span class=\"action\">[The void contracts. Light bends. The world reshapes around you.]</span>");
+    // Visual only: glitch and shake
     vfxGlitch();
     vfxScreenShake();
     await wait(500);
 
-    addLine("<span class=\"action\">[OSIRIS steps back into shadow. His cigar glows like a dying star.]</span>");
+    // Visual only: ember and smoke
     vfxEmber();
     vfxSmoke();
     await wait(500);
@@ -661,7 +658,7 @@
     await wait(600);
     setOrb("thinking");
 
-    addLine("<span class=\"action\">[A match strikes in the dark. OSIRIS reappears.]</span>");
+    // Visual only: ember and smoke
     vfxEmber();
     vfxSmoke();
     await wait(500);
@@ -696,7 +693,8 @@
 
     setMood("amused");
     await wait(300);
-    addLine("<span class=\"action\">[OSIRIS does not flinch. The cigar does not even tremble.]</span>");
+    // Visual only: mood glow (no bracket text)
+    vfxMoodGlow("amused", 3000);
     await wait(400);
     await speak(pick(responses));
   }
@@ -760,14 +758,14 @@
   //  - stopIdleMode(): snaps OSIRIS back to normal
   // ════════════════════════════════════════════════════════════
 
-  var IDLE_DELAY = 60000;        // 60 seconds before idle starts
-  var IDLE_ACTION_MIN = 3000;    // minimum ms between idle actions
-  var IDLE_ACTION_MAX = 5000;    // maximum ms between idle actions
+  var IDLE_DELAY = 60000;          // 60 seconds before idle starts
+  var IDLE_ACTION_MIN = 25000;     // minimum ms between idle actions
+  var IDLE_ACTION_MAX = 35000;     // maximum ms between idle actions
 
-  var idleTimerId = null;        // the countdown timer
-  var idleLoopId = null;         // the repeating action loop
-  var isIdle = false;            // is OSIRIS currently idle?
-  var lastIdleActionIndex = -1;  // prevent repeating the same action twice
+  var idleTimerId = null;          // countdown to idle mode
+  var idleLoopId = null;           // the scheduled next action
+  var isIdle = false;
+  var lastIdleActionIndex = -1;
 
   // ── Pool of idle actions ───────────────────────────────────
   // Each action has:
@@ -870,21 +868,17 @@
     if (isIdle) return;
     isIdle = true;
 
-    // Announce boredom
-    addLine("<span class=\"action\">[OSIRIS grows impatient. He begins to drift.]</span>");
-
-    // Start the floating side-to-side animation
     ghostEl.classList.add("vfx-idle-drift");
 
-    // Start the action loop
+    // Perform one action immediately, then schedule the next
     runIdleAction();
+    scheduleNextIdleAction();
   }
 
-  // ── Run one random idle action, then schedule the next ─────
+  // ── Run one idle action (does NOT schedule the next one) ──
   function runIdleAction() {
     if (!isIdle) return;
 
-    // Pick a random action that is different from the last one
     var index;
     var attempts = 0;
     do {
@@ -895,10 +889,7 @@
 
     var action = IDLE_ACTIONS[index];
 
-    // Print the text
-    addLine("<span class=\"action\">" + action.text + "</span>");
-
-    // Run the visual effect
+    // Run the visual effect only (no terminal text)
     if (action.vfx) action.vfx();
 
     // Apply temporary CSS class if any
@@ -908,10 +899,27 @@
         ghostEl.classList.remove(action.css);
       }, 2000);
     }
+  }
 
-    // Schedule the next action (random delay between min and max)
+  // ── Schedule the next idle action (25-35 seconds from now) ──
+  // Clears any existing scheduled action first to prevent stacking.
+  function scheduleNextIdleAction() {
+    // Clear any existing scheduled action
+    if (idleLoopId) {
+      clearTimeout(idleLoopId);
+      idleLoopId = null;
+    }
+
+    if (!isIdle) return;
+
     var nextDelay = IDLE_ACTION_MIN + Math.random() * (IDLE_ACTION_MAX - IDLE_ACTION_MIN);
-    idleLoopId = setTimeout(runIdleAction, nextDelay);
+
+    idleLoopId = setTimeout(function() {
+      if (!isIdle) return;
+      runIdleAction();
+      // Schedule the next one after this one runs
+      scheduleNextIdleAction();
+    }, nextDelay);
   }
 
   // ── Stop idle mode ─────────────────────────────────────────
@@ -919,13 +927,12 @@
     if (!isIdle) return;
     isIdle = false;
 
-    // Stop the action loop
+    // Clear the scheduled next action
     if (idleLoopId) {
       clearTimeout(idleLoopId);
       idleLoopId = null;
     }
 
-    // Remove drift and any idle CSS classes
     ghostEl.classList.remove("vfx-idle-drift");
     ghostEl.classList.remove("vfx-idle-spin");
     ghostEl.classList.remove("vfx-idle-flip");
@@ -933,26 +940,28 @@
     ghostEl.classList.remove("vfx-idle-juggle");
     ghostEl.classList.remove("vfx-idle-kick");
 
-    // Restore normal position
     ghostEl.style.top = "";
     ghostEl.style.right = "";
-
-    // Announce return
-    addLine("<span class=\"action\">[OSIRIS straightens. He was watching all along.]</span>");
   }
 
   // ── Reset idle timer (called on every player input) ────────
   function resetIdleTimer() {
-    // If currently idle, stop it
+    // If currently idle, stop everything
     if (isIdle) stopIdleMode();
 
-    // Clear any existing countdown
+    // Clear the countdown to idle mode
     if (idleTimerId) {
       clearTimeout(idleTimerId);
       idleTimerId = null;
     }
 
-    // Start a new countdown
+    // Clear any scheduled idle action (safety net)
+    if (idleLoopId) {
+      clearTimeout(idleLoopId);
+      idleLoopId = null;
+    }
+
+    // Start a fresh 60-second countdown
     idleTimerId = setTimeout(startIdleMode, IDLE_DELAY);
   }
 

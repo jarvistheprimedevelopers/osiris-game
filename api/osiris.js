@@ -80,13 +80,15 @@ module.exports = async function handler(req, res) {
     });
 
     // Start a chat with the existing history
-    const chat = model.startChat({
-      history: geminiHistory,
-      generationConfig: {
-        maxOutputTokens: 300,
-        temperature: 0.9,
-      },
-    });
+const chat = model.startChat({
+  history: geminiHistory,
+  generationConfig: {
+    maxOutputTokens: 250,
+    temperature: 0.9,
+    topP: 0.95,
+    topK: 40,
+  }
+});
 
     // Send the player's message and get a response
     const result = await chat.sendMessage(userMessage);
